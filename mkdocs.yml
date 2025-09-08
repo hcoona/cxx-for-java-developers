@@ -81,6 +81,7 @@ markdown_extensions:
 plugins:
   - search:
       lang: zh
+      separator: '[\s\u200b\-]'
   - git-revision-date-localized:
       type: iso_datetime
       enable_creation_date: true
