@@ -1,0 +1,30 @@
+/* SPDX-License-Identifier: Apache-2.0
+ * Copyright 2024 Shuai Zhang
+ */
+
+:root {
+  /* 正文/英文与中文混排（Windows 7–11、macOS、iOS、Android、Linux） */
+  --md-text-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans",
+                  "Helvetica Neue", Arial,
+                  /* 中文（简体优先） */
+                  "PingFang SC", "Hiragino Sans GB",
+                  "Microsoft YaHei UI", "Microsoft YaHei",
+                  "Noto Sans CJK SC", "WenQuanYi Micro Hei", "Heiti SC",
+                  "Droid Sans Fallback",
+                  /* Emoji（彩色表情） */
+                  "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+                  sans-serif;
+
+  /* 代码等宽字体（覆盖 Win/macOS/iOS/Android/Linux 常见内置） */
+  --md-code-font: ui-monospace, SFMono-Regular, "SF Mono",
+                  Menlo, Monaco, Consolas,
+                  "Cascadia Mono", "Cascadia Code",
+                  "Roboto Mono", "Ubuntu Mono",
+                  "DejaVu Sans Mono", "Noto Sans Mono", "Noto Mono",
+                  "Droid Sans Mono", "Source Code Pro",
+                  "Courier New", monospace;
+}
+
+/* 小优化：中文内容更舒适的行高与断行 */
+.md-typeset { line-height: 1.75; overflow-wrap: anywhere; text-rendering: optimizeLegibility; }
+.md-typeset h1, .md-typeset h2, .md-typeset h3 { font-weight: 600; }

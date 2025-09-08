@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 Shuai Zhang
+
+site_name: "面向 Java 程序员的 C++ 入门指南"
+site_url: https://example.com
+
+repo_url: https://github.com/hcoona/cxx-for-java-developers
+edit_uri: blob/main/docs/
+
+site_description: "面向 Java 程序员的 C++ 入门指南，涵盖语言特性、内存模型、RAII、工具链及性能调优等内容。"
+site_author: "Shuai Zhang"
+copyright: "© 2024 Shuai Zhang"
+
+nav:
+  - 背景介绍: index.md
+  - 快速开始: quickstart.md
+
+theme:
+  name: material
+  language: zh
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  fonts: false
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - header.autohide
+    - content.code.copy
+    - content.tabs.link
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.blocks.admonition
+  - pymdownx.blocks.caption
+  - pymdownx.blocks.details
+  - pymdownx.blocks.tab
+  - pymdownx.highlight:
+      use_pygments: true
+      guess_lang: false
+  - pymdownx.magiclink
+  - pymdownx.saneheaders
+  - pymdownx.snippets:
+      base_path:
+        - .
+        - docs/.snippets
+        - docs
+      check_paths: true
+      dedent_subsections: true
+      restrict_base_path: true
+  - pymdownx.superfences
+
+plugins:
+  - search:
+      lang: zh
+  - git-revision-date-localized:
+      type: iso_datetime
+      enable_creation_date: true

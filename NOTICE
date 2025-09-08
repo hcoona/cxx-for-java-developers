@@ -1,0 +1,29 @@
+cxx-for-java-developers
+Copyright (c) 2025 hcoona and contributors
+
+This product includes source code licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at:
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Documentation (including files in docs/ and generated site/ and README.md, EXCLUDING
+code example directories such as docs/.snippets/, any docs/**/.snippets/ subdirectories,
+and other snippet/sample/example directories) is licensed separately under the
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0):
+
+    https://creativecommons.org/licenses/by-nc-nd/4.0/
+
+Code example directories (e.g., docs/.snippets/, docs/**/.snippets/, and explicitly
+named snippets/samples/examples directories) and embedded code blocks are
+licensed under Apache-2.0 unless otherwise noted.
+
+Attribution requirements: If you redistribute or use significant portions of
+the code, retain this NOTICE file and the Apache-2.0 license header(s). For
+usage of documentation, provide proper attribution, a link to the project
+repository, and comply with the NonCommercial and NoDerivatives clauses.

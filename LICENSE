@@ -1,0 +1,51 @@
+Project: cxx-for-java-developers
+
+Copyright (c) 2025 hcoona and contributors
+
+SUMMARY
+-------
+This repository contains two categories of content:
+1. Source code examples, scripts, and build/configuration artifacts ("Code").
+2. Tutorials, guides, narrative text, and other static/media documentation assets ("Documentation").
+
+Licensing policy:
+- Code is licensed under the Apache License Version 2.0. See `LICENSE-APACHE-2.0.txt`.
+- Documentation is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0). See `LICENSE-CC-BY-NC-ND-4.0.txt`.
+
+SCOPE
+-----
+Unless a file header or directory explicitly states a different license:
+- The following are treated as "Code" (Apache-2.0 applies):
+  * All files ending in .c .cc .cpp .cxx .h .hpp .hxx .inl
+  * All build/automation related scripts and configs ending in .py .ps1 .sh .bat .cmd .js .ts .cmake .txt (when used as build scripts)
+  * `CMakeLists.txt`, `pyproject.toml`, and other toolchain/build related configuration files (e.g. *.yml *.yaml *.json)
+- The following are treated as "Documentation" (CC BY-NC-ND 4.0 applies):
+  * `README.md`
+  * All Markdown / images / style assets / static site generation resources under `docs/`, EXCEPT the following "Code Snippet Directories":
+    - `docs/.snippets/` and its subdirectories
+    - Any hidden snippet subdirectories matching `docs/**/.snippets/`
+    - Subdirectories named `snippets`, `samples`, or `examples` intended purely for source code examples
+    Source code files inside these Code Snippet Directories (and content synchronized / transcluded from them into Documentation) are classified as Code and fall under Apache-2.0.
+  * All generated static site files under `site/`
+
+Embedded / extracted code blocks:
+If Documentation (files within the CC BY-NC-ND 4.0 scope) contains explicitly fenced code blocks, or code automatically pulled from the above Code Snippet Directories, those code blocks are licensed under Apache-2.0. You may reuse them independently with proper attribution and a link to the original repository.
+
+CONTRIBUTIONS
+-------------
+Code contributions submitted to this repository are accepted under Apache-2.0 by default; textual/image/media Documentation contributions are accepted under CC BY-NC-ND 4.0. By submitting a contribution you represent that you have sufficient rights to grant the applicable license.
+
+TRADEMARK
+---------
+The project name and any associated marks (if any) are not licensed for trademark use by the licenses above. Any usage must follow applicable trademark law and avoid confusion.
+
+NO WARRANTY
+-----------
+This project is provided "AS IS" without warranties or conditions of any kind, either express or implied. See the respective full license texts for specific disclaimers.
+
+SEE ALSO
+--------
+- Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0
+- CC BY-NC-ND 4.0: https://creativecommons.org/licenses/by-nc-nd/4.0/
+
+This combined LICENSE file is provided for convenience only. In case of conflict, the respective full license texts prevail.
