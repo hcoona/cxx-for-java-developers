@@ -14,6 +14,8 @@ copyright: "© 2024 Shuai Zhang"
 nav:
   - 背景介绍: index.md
   - 快速开始: quickstart.md
+  - 程序语言:
+      - 类型: core-language/types.md
 
 theme:
   name: material
