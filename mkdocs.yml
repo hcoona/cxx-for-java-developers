@@ -85,6 +85,11 @@ plugins:
   - git-revision-date-localized:
       type: iso_datetime
       enable_creation_date: true
+  - ultralytics:
+      add_desc: True
+      add_share_buttons: False
+      add_json_ld: True
+      add_css: False
 
 extra:
   analytics:
