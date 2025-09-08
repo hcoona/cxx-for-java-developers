@@ -84,3 +84,8 @@ plugins:
   - git-revision-date-localized:
       type: iso_datetime
       enable_creation_date: true
+
+extra:
+  analytics:
+    provider: google
+    property: G-LYCXXYF3CW
