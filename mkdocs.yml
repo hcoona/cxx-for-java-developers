@@ -2,7 +2,7 @@
 # Copyright 2024 Shuai Zhang
 
 site_name: "面向 Java 程序员的 C++ 入门指南"
-site_url: https://example.com
+site_url: https://cxx-for-java-developers.pages.dev/
 
 repo_url: https://github.com/hcoona/cxx-for-java-developers
 edit_uri: blob/main/docs/
