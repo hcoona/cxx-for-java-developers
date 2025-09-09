@@ -129,6 +129,7 @@ dependencies = [
     { name = "mkdocs-ultralytics-plugin" },
     { name = "pygments" },
     { name = "pymdown-extensions" },
+    { name = "pyyaml-env-tag" },
 ]
 
 [package.metadata]
@@ -141,6 +142,7 @@ requires-dist = [
     { name = "mkdocs-ultralytics-plugin", specifier = ">=0.1.30" },
     { name = "pygments", specifier = ">=2.19.2" },
     { name = "pymdown-extensions", specifier = ">=10.16.1" },
+    { name = "pyyaml-env-tag", specifier = ">=1.1" },
 ]
 
 [[package]]

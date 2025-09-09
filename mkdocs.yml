@@ -98,6 +98,7 @@ plugins:
         - stylesheets/extra.css
 
 extra:
+  production: !ENV [CI, false]
   analytics:
     provider: google
     property: G-LYCXXYF3CW
