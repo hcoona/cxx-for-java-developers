@@ -6,17 +6,17 @@
 
 （面向 x86_64 + Linux + GCC 的常见环境）Java 与 C++ 常见基础类型对照：
 
-| Java 类型 | C++ 新类型 | C++ 旧类型 | 备注 |
-|-----------|------------|-----------|------|
-| `void` |  | `void` |  |
-| `boolean` |  | `bool` |  |
-| `char` | `char8_t` (C++20), `char16_t`, `char32_t` | `char`, `wchar` |  |
-| `byte` | `int8_t`, `uint8_t`, `std::byte` (C++17) / `gsl::byte` | `char`, `unsigned char` | 应该用无符号类型表示 Byte，但是 Java 不支持无符号类型，所以这里对应了有符号类型 |
-| `short` | `int16_t` | `short` |  |
-| `int` | `int32_t` | `int` |  |
-| `long` | `int64_t` | `long`, `long long` |  |
-| `float` |  | `float` |  |
-| `double` |  | `double` |  |
+| Java 类型 | C++ 新类型                                            | C++ 旧类型             | 备注 |
+| :-------- | :---------------------------------------------------- | :--------------------- | :--- |
+| `void`    |                                                       | `void`                 |      |
+| `boolean` |                                                       | `bool`                 |      |
+| `char`    | `char8_t` (C++20), `char16_t`, `char32_t`             | `char`, `wchar`        |      |
+| `byte`    | `int8_t`, `uint8_t`, `std::byte` (C++17) / `gsl::byte`| `char`, `unsigned char`| 应该用无符号类型表示 Byte，但是 Java 不支持无符号类型，所以这里对应了有符号类型 |
+| `short`   | `int16_t`                                             | `short`                |      |
+| `int`     | `int32_t`                                             | `int`                  |      |
+| `long`    | `int64_t`                                             | `long`, `long long`    |      |
+| `float`   |                                                       | `float`                |      |
+| `double`  |                                                       | `double`               |      |
 
 > 注意：`int`/`long` 等旧类型长度依赖 CPU / OS / 编译器，不要假设固定长度。常见的对应关系及 C++ 中基础类型的详细介绍见 <https://en.cppreference.com/w/cpp/language/types>
 
