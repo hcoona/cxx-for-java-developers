@@ -44,6 +44,7 @@ theme:
     - navigation.indexes
     - navigation.top
     - toc.follow
+    - toc.integrate
     - search.suggest
     - search.highlight
     - header.autohide
