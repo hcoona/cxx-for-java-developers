@@ -53,12 +53,7 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
-extra_javascript:
-  - https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js
-
 markdown_extensions:
-  - pymdownx.arithmatex:
-      generic: true
   - pymdownx.blocks.admonition
   - pymdownx.blocks.caption
   - pymdownx.blocks.details
