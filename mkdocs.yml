@@ -91,6 +91,7 @@ plugins:
       add_json_ld: True
       add_css: False
   - minify:
+      enabled: !ENV [CI, false]
       minify_html: true
       minify_js: true
       minify_css: true
