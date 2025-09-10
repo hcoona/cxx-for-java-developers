@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: CC-BY-NC-ND-4.0 -->
 
-# C++ Onboarding Guide for Java Developers
+# C++ for Java Developers: A Starter’s Guide
 
 [中文版 README](./README.zh-Hans.md)
 
