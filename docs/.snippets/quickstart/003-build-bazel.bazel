@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2021 Shuai Zhang
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# --8<-- [start:code]
+cc_library(
+    name = "example_lib",
+    hdrs = ["example_lib.h"],
+    srcs = ["example_lib.cc"],
+)
+
+cc_binary(
+    name = "example",
+    srcs = ["main.cc"],
+    deps = [":example_lib"],
+)

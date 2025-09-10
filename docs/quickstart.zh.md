@@ -25,70 +25,31 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
 项目的目录结构如下所示：
 
 ```text
-.
-├── WORKSPACE.bazel
-├── BUILD.bazel
-└── example
-    ├── BUILD.bazel
-    ├── example_lib.h
-    ├── example_lib.cc
-    └── main.cc
+--8<-- ".snippets/quickstart/001-structure.txt:code"
 ```
 
 顶层的 `WORKSPACE.bazel` 与 `BUILD.bazel` 先留空即可，具体作用参考 [Bazel 官方文档](https://bazel.build/)。
 
 ```cpp
-// example/example_lib.h
-#pragma once
+--8<--
+.snippets/quickstart/002a-example_lib.h:code
 
-namespace example {
+.snippets/quickstart/002b-example_lib.cc:code
 
-int sum(int a, int b);
-
-}  // namespace example
-
-// example/example_lib.cc
-#include "example/example_lib.h"
-
-namespace example {
-
-int sum(int a, int b) { return a + b; }
-
-}  // namespace example
-
-// example/main.cc
-#include <iostream>
-
-#include "example/example_lib.h"
-
-int main() {
-    int a;
-    int b;
-    std::cin >> a >> b;
-    std::cout << example::sum(a, b) << std::endl;
-}
+.snippets/quickstart/002c-main.cc:code
+--8<--
 ```
 
 `example/BUILD.bazel`：
 
 ```python
-cc_library(
-    name = "example_lib",
-    hdrs = ["example_lib.h"],
-    srcs = ["example_lib.cc"],
-)
-
-cc_binary(
-    name = "example",
-    srcs = ["main.cc"],
-    deps = [":example_lib"],
-)
+--8<-- ".snippets/quickstart/003-build-bazel.bazel:code"
 ```
 
 编译命令：
 
 ```bash
-bazel build //example:example
+--8<-- ".snippets/quickstart/004-build-command.sh:code"
 ```
 
 构建完成后生成可执行文件：`bazel-bin/example/example`。
