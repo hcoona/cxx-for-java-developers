@@ -22,7 +22,7 @@ nav:
       - "异常处理": core-language/exceptions.md
       - "[TODO]标准库": core-language/standard-library.md
       - "[TODO]第三方基础库": core-language/third-party-libraries.md
-  - "[TODO]打包提供给其他语言使用": ffi.md
+  - "打包提供给其他语言使用": ffi.md
   - "[TODO]工具链":
       - "[TODO]构建系统": toolchain/build-systems.md
       - "[TODO]静态分析": toolchain/static-analysis.md
