@@ -29,7 +29,8 @@ void MyService::Stop() {
 }
 
 void MyService::BackgroundThreadEntryPoint() {
-  while (!stopping_notification_.WaitWithTimeout(absl::Millisecond(kLoopInterval))) {
+  while (!stopping_notification_.WaitWithTimeout(
+      absl::Millisecond(kLoopInterval))) {
     // ...
   }
 }

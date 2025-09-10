@@ -9,9 +9,9 @@
 #include "example/example_lib.h"
 
 int main() {
-    int a;
-    int b;
-    std::cin >> a >> b;
-    std::cout << example::sum(a, b) << std::endl;
+  int a;
+  int b;
+  std::cin >> a >> b;
+  std::cout << example::sum(a, b) << std::endl;
 }
 // --8<-- [end:code]
