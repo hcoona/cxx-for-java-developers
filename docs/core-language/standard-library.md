@@ -319,9 +319,50 @@ Abseil 库提供的 Random 的介绍见 <https://abseil.io/docs/cpp/guides/rando
 
 ## 日期和时间
 
-/// admonition | TODO
-    type: todo
-待转录
+/// admonition | 注意
+这里假设读者了解 Joda Time 或者 Java 8 新加入的 Date API。
+///
+
+首先我们要先掰开这几个概念：
+
+1. Clock：时钟，由时钟产生当前时间点，或者历史的某个时间点
+1. Timepoint：某个确定的时间点，由时钟产生
+1. Duration：两个 Timepoint 之间的距离
+
+Java 中隐含 Clock 都是系统时钟，但是这个设定在某些场景下可能未必合理（但是大多数情况下是合理的），例如有的场景需要时钟是单向增长不会回拨的。时钟什么时候会回拨呢，比如说 NTP 发现时钟跑的太快了，进行同步的时候可能就会将时间往回拨；但是另一种选择就是不回拨时间，只把时钟变慢，然后过一段时间再恢复正常。
+Timepoint 可能携带时区信息（例如 `java.time.ZonedDateTime`）或者不携带时区信息（`java.time.LocalDateTime`）。
+
+C++ 标准库中提供了 3 种时钟：
+
+1. `system_clock`：系统时钟，类似于 `java.time.Clock`
+1. `steady_clock`：保证不会发生回拨的时钟
+1. `high_resolution_clock`：高精度时钟，取决于实现
+
+在 C++ 标准库中，将 Clock 类型放到了类型系统中，这是好的且很有意义的——在 2 个不同的时钟产生的时间之间进行比较是没有意义的。但是带来的副作用就是产生的 timepoint 的类型比较复杂，比如说可能是 `std::chrono::time_point<std::chrono::steady_clock>`。而且比较蛋疼的是如果我们要更换时钟的时候，比如说将所有的 `system_clock` 换成 `steady_clock`，还得改所有的 timepoint，特别是这些 timepoint 类型还可能出现在方法的参数上面。
+
+在 C++ 标准库中，将时间单位也放到了 duration 的类型系统中，个人感觉在大部分常见的体系结构（特别是 64 位体系结构下）下这样做不是很有意义。
+
+> BTW，如果想要使用其他物理量可以看一下 <https://github.com/mpusz/units>
+
+```cpp
+auto start = std::chrono::steady_clock::now();
+LOG(INFO) << "f(42) = " << fibonacci(42);
+auto end = std::chrono::steady_clock::now();
+
+std::chrono::duration<double> elapsed = end - start;
+LOG(INFO) << "elapsed time: "
+          << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count()
+          << "s\n";
+```
+
+由于我们经常需要和 epoch 时间打交道，因此特别提供了相关的转换方法：
+
+- epoch time -> chrono time：先构造 duration，然后调用 timepoint 的构造函数 https://en.cppreference.com/w/cpp/chrono/time_point/time_point
+- chrono time -> epoch time：<https://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch>
+总的来说我觉得 chrono 设计考虑的比较全面，但是用起来不是很爽。比较推荐使用 Abseil 库提供的时间 API：https://abseil.io/docs/cpp/guides/time。Abseil 库的时间 API 也是假设 Clock 就是 System Clock，没有把时间单位弄到类型系统里面，所以最后搞出来的东西就比较简单，用起来比较方便。
+
+/// admonition | 注意
+在严肃的场景下考虑如何解析字符串表示的日历时间，并转换成一个系统绝对时间，应该使用 Abseil 库中的 Civil Time 或者具有类似功能的库。处理各种地区的特殊情况是非常复杂（比如说夏令时，特殊润秒规则等等）的问题，一定不要凭感觉手工去做。
 ///
 
 ## 多线程和并发控制
