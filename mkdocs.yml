@@ -106,20 +106,20 @@ plugins:
           nav_translations:
             "背景介绍": "Background"
             "快速开始": "Quick Start"
-            "程序语言":
+            "程序语言": "Core Language"
             "类型": "Types"
             "语法语义": "Syntax and Semantics"
             "异常处理": "Exceptions"
             "标准库": "Standard Library"
             "第三方基础库": "Third Party Libraries"
             "打包提供给其他语言使用": "FFI"
-            "工程化工具":
+            "工程化工具": "Engineering"
             "构建系统": "Build Systems"
             "静态工具": "Static Analysis"
             "动态工具": "Dynamic Analysis"
             "运行调试": "Debugging"
             "性能分析": "Profiling"
-            "常见库介绍":
+            "常见库介绍": "Libraries"
             "基础库": "Fundamental"
             "日志": "Logging"
             "命令行解析": "CLI"
