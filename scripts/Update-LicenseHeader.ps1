@@ -78,7 +78,8 @@ try {
         "overrides/**" "scripts/**"
 
 	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
-        ".editorconfig" ".gitignore" "mkdocs.yml" "pyproject.toml" "README.*" "REUSE.toml"
+        ".editorconfig" ".gitignore" ".markdownlint-cli2.yaml" ".markdownlint.yml" `
+        "mkdocs.yml" "pyproject.toml" "README.*" "REUSE.toml"
 
 	Write-Information 'Completed reuse annotate.'
 }
