@@ -23,12 +23,12 @@ nav:
       - "[TODO]标准库": core-language/standard-library.md
       - "[TODO]第三方基础库": core-language/third-party-libraries.md
   - "打包提供给其他语言使用": ffi.md
-  - "[TODO]工具链":
-      - "[TODO]构建系统": toolchain/build-systems.md
-      - "[TODO]静态分析": toolchain/static-analysis.md
-      - "[TODO]动态分析": toolchain/dynamic-analysis.md
-      - "[TODO]调试": toolchain/debugging.md
-      - "[TODO]性能分析": toolchain/profiling.md
+  - "工程化工具":
+      - "构建系统": engineering/build-systems.md
+      - "静态工具": engineering/static-analysis.md
+      - "动态工具": engineering/dynamic-analysis.md
+      - "运行调试": engineering/debugging.md
+      - "性能分析": engineering/profiling.md
   - "[TODO]常见库介绍":
       - "[TODO]基础库": library/fundamental.md
       - "[TODO]日志": library/logging.md
