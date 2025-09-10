@@ -1,4 +1,8 @@
-<!-- SPDX-License-Identifier: CC-BY-NC-ND-4.0 -->
+<!--
+SPDX-FileCopyrightText: 2021 Shuai Zhang
+
+SPDX-License-Identifier: Apache-2.0
+-->
 
 # 面向 Java 程序员的 C++ 入门指南
 
@@ -60,5 +64,5 @@ uv lock --upgrade <package-name>==<version>
 
 本项目代码和文档分别采用不同的许可证，详情请参阅 [LICENSE](./LICENSE) 文件。
 
-1. 代码采用 [Apache-2.0](./LICENSE-APACHE-2.0.txt) 许可证
-1. 文档采用 [CC BY-NC-ND 4.0](./LICENSE-CC-BY-NC-ND-4.0.txt) 许可证
+1. 代码采用 [Apache-2.0](./LICENSES/Apache-2.0.txt) 许可证
+1. 文档采用 [CC BY-NC-ND 4.0](./LICENSES/CC-BY-NC-ND-4.0.txt) 许可证

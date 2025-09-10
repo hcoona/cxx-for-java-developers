@@ -1,4 +1,8 @@
-<!-- SPDX-License-Identifier: CC-BY-NC-ND-4.0 -->
+<!--
+SPDX-FileCopyrightText: 2021 Shuai Zhang
+
+SPDX-License-Identifier: Apache-2.0
+-->
 
 # C++ for Java Developers: A Starter’s Guide
 
@@ -60,5 +64,5 @@ uv lock --upgrade <package-name>==<version>
 
 Code and documentation use different licenses. See [LICENSE](./LICENSE) for details.
 
-1. Source code: [Apache-2.0](./LICENSE-APACHE-2.0.txt)
-2. Documentation: [CC BY-NC-ND 4.0](./LICENSE-CC-BY-NC-ND-4.0.txt)
+1. Source code: [Apache-2.0](./LICENSES/Apache-2.0.txt)
+2. Documentation: [CC BY-NC-ND 4.0](./LICENSES/CC-BY-NC-ND-4.0.txt)

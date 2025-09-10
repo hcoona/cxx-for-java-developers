@@ -1,5 +1,7 @@
-# SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 Shuai Zhang
+# SPDX-FileCopyrightText: 2021 Shuai Zhang
+#
+# SPDX-License-Identifier: Apache-2.0
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,windows,linux,macos,visualstudiocode,vim
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,windows,linux,macos,visualstudiocode,vim

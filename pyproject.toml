@@ -1,5 +1,7 @@
-# SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 Shuai Zhang
+# SPDX-FileCopyrightText: 2021 Shuai Zhang
+#
+# SPDX-License-Identifier: Apache-2.0
 
 [project]
 description = "面向 Java 开发者的 C++ 入门教程"
