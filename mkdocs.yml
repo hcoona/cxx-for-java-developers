@@ -29,13 +29,13 @@ nav:
       - "动态工具": engineering/dynamic-analysis.md
       - "运行调试": engineering/debugging.md
       - "性能分析": engineering/profiling.md
-  - "[TODO]常见库介绍":
-      - "[TODO]基础库": library/fundamental.md
-      - "[TODO]日志": library/logging.md
-      - "[TODO]命令行解析": library/cli.md
-      - "[TODO]测试": library/testing.md
-      - "[TODO]序列化": library/serialization.md
-      - "[TODO]通信": library/communication.md
+  - "常见库介绍":
+      - "基础库": library/fundamental.md
+      - "日志": library/logging.md
+      - "命令行解析": library/cli.md
+      - "测试": library/testing.md
+      - "序列化": library/serialization.md
+      - "通信": library/communication.md
   - "[TODO]常见 Idioms/Design Patterns": idioms-and-patterns.md
   - "[TODO]参考资料": references.md
 
