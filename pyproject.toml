@@ -11,7 +11,12 @@ authors = [
   {name = "Shuai Zhang", email = "zhangshuai.ustc@gmail.com"},
 ]
 
-license = {file = "LICENSE"}
+license-files = [
+  "LICENSE",
+  "NOTICE",
+  "LICENSES/Apache-2.0.txt",
+  "LICENSES/CC-BY-NC-ND-4.0.txt",
+]
 readme = "README.md"
 
 requires-python = ">=3.12"
