@@ -277,10 +277,45 @@ v.erase(std::remove_if(v.begin(), v.end(), IsOdd), v.end());
 
 ## 随机数
 
-/// admonition | TODO
-    type: todo
-待转录
+/// admonition | 注意
+如果需要密码学安全的随机数，务必不要使用这种方法。请使用已知的密码学安全的算法去产生符合要求的随机数，例如通过 OpenSSL 库生成（见 <https://www.openssl.org/docs/man1.1.1/man3/RAND_bytes.html>）。
 ///
+
+Java 中的随机数比较简单，就是调用 `Random` 类生成就行了。但是其实有些场景下需要关注并控制更多细节。简单来说，分为这样几个东西：
+
+1. 伪随机数生成算法（更确切地，在 C++ 中是 `UniformRandomBitGenerator`）
+1. 伪随机数生成算法所需的种子
+1. 生成的随机数的概率分布
+
+一个比较全面的介绍见 <https://en.cppreference.com/w/cpp/header/random>。这里简单给个例子：
+
+```cpp
+// Will be used to obtain a seed for the random number engine
+std::random_device rd;
+
+// Standard mersenne_twister_engine seeded with |rd()|.
+std::mt19937 gen(rd());
+
+// Produce uniform distribution for range [1, 6] (both boundary inclusive).
+std::uniform_int_distribution<> distrib(1, 6);
+
+v->reserve(n);
+for (int i = 0; i < n; i++) {
+  v->emplace_back(distrib(gen));
+}
+```
+
+这里不能简单地用时间来初始化随机数生成器，安全性较差（对，说的就是你—— `srand(time(NULL))`）。一般是从系统硬件熵池中取一小段数据出来初始化随机数生成器，这样比较安全。这里也不能简单地使用 `% 6` 的方法来产生 [0, 5] 区间的整数，因为这样产生的分布不是均匀的（可以试着计算一下 [1, 8] 映射到 [1, 6]，简单取模的话概率分布是什么样子的）。
+
+C++ 标准库中提供的 random 接口能力足够强大，但是用起来还是不太爽，Abseil 库提供的 Random 功能要更合理一些：
+
+1. 有些算法不能简单地用 `rd()` 生成的 `unsigned int` 来初始化，需要更长的种子启动
+1. 不太容易搞明白/指定随机分布的区间（左闭右开，左开右闭，等等）
+1. 对测试不友好，需要自己实现一个完全符合 C++ 标准库要求的伪随机数生成器
+
+Abseil 库提供的 Random 的介绍见 <https://abseil.io/docs/cpp/guides/random>。
+
+如果需要 `ThreadLocalRandom` 的话，可以简单的通过添加 `thread_local` 修饰符来解决这一问题，详情见后面多线程部分关于 `thread_local` 的介绍。
 
 ## 日期和时间
 
