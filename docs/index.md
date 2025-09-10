@@ -30,3 +30,7 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
     1. Profiling
 
 本文内网原始版本位于 [ByteDance 飞书文档](https://bytedance.feishu.cn/docs/doccn2VDrbXZnWjjGoqCeFpVlPc)。
+
+/// admonition | 声明
+我目前（2025-09-10）已经不从事 C++ 开发工作。后续可能会不定期根据读者反馈进行更新。欢迎将你的想法和建议在下面的 Discussion 区域留言。
+///
