@@ -237,10 +237,43 @@ STL 容器允许自定义 allocator 来改变其内存分配方式。这有时�
 
 ## 算法
 
-/// admonition | TODO
-    type: todo
-待转录
-///
+STL 中包括了一些常见的算法。我个人觉得比较常用的有这些：
+
+1. 二分搜索：`lower_bound`/`upper_bound`
+1. 最大最小值：`min_element`/`max_element`/`minmax_element`
+1. 数值计算结果限制在上下界之间：`clamp`
+1. 删掉容器中所有符合条件的元素：`remove_if`
+
+这里我就不一一详细介绍了，可以去 <https://en.cppreference.com/w/cpp/algorithm> 这里看一下。这里稍微说一下几个比较常见的 tricky 的用法。
+
+### 找到有序容器中最后一个不大于某元素的位置
+
+> 需要建立在全序关系之上
+
+首先我们有这样 2 个二分算法（假设比较函数都是 `std::less<>`，容器中的元素是按照比较函数即升序排序的）：
+
+1. `lower_bound`：找到第一个不小于给定值的位置
+
+1. `upper_bound`：找到第一个大于给定值的位置
+
+我们想要找到最后一个不大于给定值的位置，就得沿着容器反着找。把容器反序来看，是一个降序序列，正序找到最后一个不大于给定值的位置，即反序找到第一个不大于给定值的位置，应该使用 `lower_bound`：
+
+```cpp
+auto it = std::lower_bound(c.rbegin(), c.rend(), std::greater<>());
+```
+
+这么说起来可能有些绕，用数学语言描述可能更容易理解一些。
+
+### 删掉容器中所有符合条件的元素
+
+> <https://www.wikiwand.com/en/Erase%E2%80%93remove_idiom>
+
+需要注意 `remove_if` 只是将符合条件的元素挪到容器末尾处，而没有真正删除这些元素。所以需要这样的模式调用：
+
+```cpp
+std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+v.erase(std::remove_if(v.begin(), v.end(), IsOdd), v.end());
+```
 
 ## 随机数
 
