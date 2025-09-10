@@ -16,36 +16,7 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
 > 自创，但是常用
 
 ```cpp
-class MyService {
- public:
-  Status Start();
-  void Stop();
-
- private:
-  void BackgroundThreadEntryPoint();
-
-  std::unique_ptr<std::thread> background_thread_;
-  absl::Notification stopping_notification_;
-};
-
-Status MyService::Start() {
-  background_thread_ =
-      std::make_unique<std::thread>(&BackgroundThreadEntryPoint, this);
-}
-
-void MyService::Stop() {
-  stopping_notification_.Notify();
-  if (background_thread_) {
-    background_thread_->join();
-    background_thread_.reset();
-  }
-}
-
-void MyService::BackgroundThreadEntryPoint() {
-  while (!stopping_notification_.WaitWithTimeout(absl::Millisecond(kLoopInterval))) {
-    // ...
-  }
-}
+--8<-- ".snippets/idioms-and-patterns/001-background-thread-service.cc:code"
 ```
 
 ## 线程安全的用时初始化的 Singleton
@@ -59,19 +30,13 @@ void MyService::BackgroundThreadEntryPoint() {
 ///
 
 ```cpp
-Factory& Factory::GetInstance() {
-  static base::NoDestructor<Factory> instance;
-  return *instance;
-}
+--8<-- ".snippets/idioms-and-patterns/002a-singleton-nodestructor.cc:code"
 ```
 
 我们先不看 `base::NoDestructor` 是个啥，假设就是这样的：
 
 ```cpp
-Factory& Factory::GetInstance() {
-  static Factory instance;
-  return instance;
-}
+--8<-- ".snippets/idioms-and-patterns/002b-singleton-simple.cc:code"
 ```
 
 1. 这样做只会在调用 `Factory::GetInstance()` 时才会初始化 static Factory instance。
@@ -89,37 +54,5 @@ Factory& Factory::GetInstance() {
 《Linux 多线程服务端编程：使用 muduo C++ 网络库》
 
 ```cpp
-class MyQueue {
- public:
-  void PushQueue(int v);
-  void PrintQueue();
-
- private:
-  std::shared_ptr<std::vector<int>> queue_ ABSL_GUARDED_BY(mutex_);
-  absl::Mutex mutex_;
-};
-
-void MyQueue::PushQueue(int v) {
-  absl::MutexLock lock(&mutex_);
-  if (!queue_.unique()) {
-    // Copy if other people reading the queue.
-    queue_ = std::make_shared<std::vector<int>>(*queue_);
-  }
-  // Now we ensure no other people accessing the queue.
-  DCHECK(queue_.unique());
-  queue_.emplace_back(v);
-}
-
-void MyQueue::PrintQueue() {
-  std::shared_ptr<std::vector<int>> the_queue;
-  {
-    absl::MutexLock lock(&mutex_);
-    the_queue = queue_;
-    DCHECK(!queue_.unique());
-  }
-
-  for (int v : *the_queue) {
-    absl::PrintF("%d\n", v);
-  }
-}
+--8<-- ".snippets/idioms-and-patterns/003-copy-on-write-queue.cc:code"
 ```
