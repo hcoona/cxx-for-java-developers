@@ -36,7 +36,7 @@ nav:
       - "测试": library/testing.md
       - "序列化": library/serialization.md
       - "通信": library/communication.md
-  - "[TODO]常见 Idioms/Design Patterns": idioms-and-patterns.md
+  - "常见 Idioms/Design Patterns": idioms-and-patterns.md
   - "[TODO]参考资料": references.md
 
 theme:
