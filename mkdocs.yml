@@ -10,7 +10,7 @@ edit_uri: blob/main/docs/
 
 site_description: "面向 Java 程序员的 C++ 入门指南，涵盖语言特性、内存模型、RAII、工具链及性能调优等内容。"
 site_author: "Shuai Zhang"
-copyright: "© 2024 Shuai Zhang"
+copyright: "© 2021 Shuai Zhang"
 
 nav:
   - "背景介绍": index.md
