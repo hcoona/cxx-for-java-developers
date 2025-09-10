@@ -367,7 +367,213 @@ LOG(INFO) << "elapsed time: "
 
 ## 多线程和并发控制
 
-/// admonition | TODO
-    type: todo
-待转录
+基本上可以认为 Linux 环境下 C++ 中的线程就是对 pthread 原语的一些包装，因此一些线程相关的问题最好先看看 [pthread 的 man 手册](https://linux.die.net/man/7/pthreads)。
+
+### Sleep
+
+```cpp
+std::this_thread::sleep_for(std::chrono::milliseconds(kSleepMillis));
+
+// Since c++14
+std::this_thread::sleep_for(2000ms);
+
+// Abseil
+absl::SleepFor(absl::Milliseconds(kSleepMillis));
+```
+
+但是睡过去容易醒过来难，如有可能，强烈建议考虑是不是应该传一个 `absl::Notification` 进来，然后使用 `notification.WaitForNotificationWithTimeout(kSleepInterval)`。具体例子见后面“常见编程 Pattern”里面的“后台线程周期性活动”。
+
+### 线程
+
+简单来说，创建一个 `std::thread` 实例的时候就会创建一个线程并立刻执行给定的函数。
+
+/// admonition | 注意
+这里没有机会在启动线程前执行 pthread 的一些初始化工作。如果有这方面的需要，应该手工包装一个 Thread 类出来使用，例如 <https://source.chromium.org/chromium/chromium/src/+/main:base/threading/platform_thread_posix.cc;drc=37a0e6c0a6a13a078d08f51faf276c4eb4f0ef1a>
 ///
+
+但是可以在后续时间通过 `native_handle` 方法拿到其 pthread 句柄，并进行后续操作。常见的一些工作可能包括绑核（`pthread_setaffinity_np`），设置线程名（`pthread_setname_np`），设置优先级（`pthread_setschedparam`）等等。
+
+/// admonition | 注意
+`std::thread` 实例析构时，要求析构前一定调用过其 `join` 方法或者 `detach` 方法。如果不满足要求的话，程序会直接 core 掉。
+///
+
+一般来说，我们在严肃的场合下使用线程，都需要考虑程序退出时这些线程怎么处理的问题。在这里，我建议给后台线程传入一个额外的 `absl::Notification` 参数，用于通知后台线程结束。这样我们就可以 `join` 这个后台线程，等到它跑到一个合适的时机再退出整个程序了（graceful shutdown）。
+
+### 线程池
+
+简单来说，线程池还没有进入 C++ 标准（估摸着 C++ 23 会进，因为要统筹考虑协程和 future/promise 等机制的配合，所以得先等他们进标准）。如果要用的话，可以考虑：
+
+1. Boost 库中的 `boost::asio::io_service`
+<!-- markdownlint-disable-next-line MD033 -->
+1. <del style="color:#666;">公司内 noodle 库中有一个线程池</del>
+1. 自己写一个（后面这几个我都没用过）
+1. <https://chriskohlhoff.github.io/executors/>
+1. <https://github.com/lewissbaker/cppcoro>
+1. <https://github.com/Quuxplusone/coro>
+
+另外还可以考虑的是使用 dataflow 模式进行编程，而不直接裸用线程池，比如说：
+
+1. 微软的 PPL：<https://docs.microsoft.com/en-us/cpp/parallel/concrt/parallel-patterns-library-ppl?view=msvc-160>（可以在 cpprestsdk 中找到一个跨平台的版本 pplx：<https://github.com/microsoft/cpprestsdk>）
+1. Intel TBB：<https://software.intel.com/content/www/us/en/develop/documentation/onetbb-documentation/top.html>
+
+### 锁
+
+在 C++ 中不存在 `synchronized` 关键字，需要自己手工控制加锁。
+
+| Java 类型 | C++ 类型 | 备注 |
+| --- | --- | --- |
+|     | `std::mutex`，`absl::Mutex` | `std::recursive_mutex` 的不可重入版本 |
+|     | `std::shared_mutex`，`absl::Mutex` | `ReentrantReadWriteLock` 的不可重入版本 |
+| `java.util.concurrent.locks.ReentrantLock` | `std::recursive_mutex` | |
+| `java.util.concurrent.locks.ReentrantReadWriteLock` | 无 | |
+
+在 Java 中一般使用这样的手法来确保锁被释放了：
+
+```java
+lock.lock();  // block until condition holds
+try {
+    // ... method body
+} finally {
+    lock.unlock()
+}
+```
+
+在 C++ 中一般使用这样的手法：
+
+```cpp
+{
+  std::lock_guard lock(mutex);  // Locking when |lock| creating.
+  // locked here.
+}  // Auto unlock when |lock| destructing
+
+{
+  absl::MutexLock(&mutex);
+  // ...
+}
+```
+
+读锁需要使用 `std::shared_lock`（`absl::ReaderMutexLock`），写锁需要使用 `std::unique_lock`（`absl::WriterMutexLock`）。
+
+需要额外关注的一个事情是，在类中声明成员变量 `std::mutex`/`absl::Mutex` 的时候，通常会使用 `mutable` 关键字进行修饰。这是因为如果需要对外提供 `const` 修饰符修饰的成员方法，访问被 `mutex` 保护的成员时，需要加锁/解锁，这时需要对 `mutex` 进行修改。`mutable` 修饰符允许在 `const` 上下文中修改一个成员变量。
+
+```cpp
+class MyIntCounter {
+ public:
+  int32_t value() const;
+
+ private:
+  mutable absl::Mutex mutex_;
+  // See static analysing thread-safety errors for further details about ABSL_GUARDED_BY.
+  // Intrduced in the following subsection.
+  int32_t value_ ABSL_GUARDED_BY(mutex_);
+};
+
+int32_t MyIntCounter::value() const {
+  // clang++ with -Wthread-safety would report error if we access |value_| without
+  // locking the |mutex_|.
+  // See https://releases.llvm.org/8.0.1/tools/clang/docs/ThreadSafetyAnalysis.html
+  absl::MutexLock lock(&mutex_);
+  return value_;
+}
+```
+
+### 原子访问/`volatile` (Updated 2022-02-14)
+
+/// admonition | 注意
+C++ 的 `volatile` 语义和 Java 的 `volatile` 不一样。简单来说，不要试图通过使用 `volatile` 关键字来做原子访问。
+///
+
+C++ 的原子访问比较简单，就是使用 `std::atomic<>` 泛型类包装一下你的类型就行了。但是这要求被包装的类必须满足限制条件 `TriviallyCopyable`，`CopyConstructible`，`CopyAssignable`。但是通常我们也不会用 atomic 去包装自定义的非数值类型，暂时不去管这个事情。
+
+简单来说你可以用 `std::atomic<int>`，`std::atomic<int32_t>`，`std::atomic<double>` 之类的类型；而不必使用 `std::atomic_int` 之类的类型。他们是等价的。
+
+/// admonition | 注意
+这里特别说一下的事情是，如果对原子变量的操作在关键路径上，并且成为瓶颈了，可以通过放宽一致性要求来得到更好的性能。但是如果弄不明白就别搞这个事情了，不如 profiling 一下找找真正的瓶颈在哪儿。
+///
+
+简单的来说，对于多个原子变量的访问，如果需要按照写入的顺序读到他们的更改，需要在写的时候（`store` 方法）指定 `std::memory_order_release`，在读的时候（`load` 方法）指定 `std::memory_order_acquire`。不指定的话，默认使用 `std::memory_order_seq_cst`，是强一致性。详细介绍见 <https://en.cppreference.com/w/cpp/atomic/memory_order>，非常复杂，不建议一般程序员了解。
+
+简单来说，用 atomic 的时候，如果在意性能，可以在所有的写操作使用 `release` 标记，在所有读操作使用 `acquire` 标记。最近看到了一个比较好的解释，见 <http://bluehawk.monmouth.edu/~rclayton/web-pages/u03-598/netmemcon.html>。
+
+### `thread_local`
+
+C++ 中不需要进行特殊的处理，或者是类型包裹（比如说 `java.lang.ThreadLocal`），只需要在声明变量的时候加上 `thread_local` 修饰符就可以声明一个 Thread-Local 变量了。需要注意的是：
+
+1. 有些操作系统（比如说 Android 的一些版本）声明很多 Thread-Local 变量的时候会有问题。（<https://source.chromium.org/chromium/chromium/src/+/main:base/threading/thread_local.h;l=28;drc=7b5337170c1581e4a35399af36253f767674f581>）
+1. 如果 Thread-Local 变量比较大的话，在内核比较多的机器上有可能会占用很多内存。（这是个程序设计问题，不是 C++ 自身的问题，也不是操作系统的问题）
+
+```cpp
+static thread_local int32_t id_generator;
+
+static thread_local int32_t id_generator_2 = InitIdGenerator();
+```
+
+### 信号量/Latch/Barrier/条件变量
+
+信号量（`java.util.concurrent.Semaphore`）至少需要到 C++20 才能进标准库。Latch 和 Barrier 也需要等到 C++20 以后。原则上信号量在合适的使用场景下可以比条件变量（`java.util.concurrent.locks.Condition`）的性能更好一些。
+
+条件变量是能力比较强大的一种同步模型，基本上可以用来模拟实现上面缺失的几种元素。而且如果使用场景比较复杂的话，用户应该探索一下，是不是用条件变量可以更高效地实现所需的同步功能。这里就不详细去做条件变量的教学了。
+
+| 名称 | Java 类型 | C++ 类型 |
+| --- | --- | --- |
+| 信号量 | `java.util.concurrent.Semaphore` | `std::counting_semaphore`（C++20） |
+| Latch | `java.util.concurrent.CountDownLatch` | `std::latch`（C++20），`absl::BlockingCounter` |
+| Barrier | `java.util.concurrent.CyclicBarrier` | `std::barrier`（C++20），`absl::Barrier` |
+| 条件变量 | `java.util.concurrent.locks.Condition` | `std::condition_variable`，`absl::CondVar` |
+
+值得一提的是，`absl::Mutex` 提供了使用条件变量的一种简化形式（解锁的时候自动 Notify），具体介绍可以看 <https://abseil.io/docs/cpp/guides/synchronization#conditional-mutex-behavior>。
+
+### `std::call_once`
+
+在多线程并发的情况下也能保证被保护的函数只被调用一次。特别的，被保护的函数抛异常的时候，允许再次执行这个函数，直到这个函数正常执行完过。
+
+<https://en.cppreference.com/w/cpp/thread/call_once>
+
+但是创建一个 lazily initialized singleton 的时候不需要这样做，见后面 “常见编程 Pattern”。
+
+### Future/Promise 模型
+
+C++ 当前提供的 `std::future`/`std::promise` 机制比较简单，基本上干不了什么事（甚至都不能用 `then` 串起来）。已经有新的标准提案改进这个事情，但是需要等协程等改动先进标准，所以大概需要等到 C++23 才能用上。具体情况可以看一下这个文档：<https://www.modernescpp.com/index.php/the-end-of-the-detour-unified-futures>。
+
+如果当前想要用现成的，稍微功能齐全一些的 future/promise，可以看一下 `folly::Future`/`folly::Promise`：<https://github.com/facebook/folly/blob/16a7084/folly/docs/Futures.md>。以及这个（是个标准提案的 POC，不知道性能会不会有问题）：<https://chriskohlhoff.github.io/executors/>。
+
+> 补充说明一下，这里说的功能不全面指的是不能把多个任务串起来执行，典型的类似于 nodejs 里面的 callback 火箭。更先进的做法可能是通过 `await`/`async` 这样的关键字把多个任务通过协程之类的方式串起来，典型的类似于 C# 中的 `await`/`async` 关键字（现在 Python 好像也有了）。目前前者已经可以通过 `Folly::Future` 这样的功能补全，在新的 C++ 标准中也可以通过 `then()` 或者 `transform()` 之类的方法实现了。后者需要协程库甚至编译器的支持，可能需要等标准更明确一些才能继续讨论。
+>
+> 目前已经有的一些提案见 P0443 和 P1897。
+
+新加（2021-08-03）一个扩展阅读：[浅谈 The C++ Executors](https://zhuanlan.zhihu.com/p/395250667)。
+
+### 并发访问错误静态分析
+
+/// admonition | 注意
+简单易用，功能强大，强烈推荐！
+///
+
+这两个文档有比较详细的介绍，我就不赘述了。
+
+- [Thread Safety  Annotations for Clang.pdf](https://llvm.org/devmtg/2011-11/Hutchins_ThreadSafety.pdf)
+- [Thread Safety Analysis](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
+
+唯一的问题是，怎么让你的项目可以被 clang 编译。这里提供一个思路：
+
+1. 如果你用了 Ninja，可以导出一个 `compile_commands.json` 文件，这个文件挺有用的，一般可以用来支持 clangd 提供 LSP 提示
+1. 然后自己写个脚本处理一下这个文件生成对应的检查脚本（比如说可以是 makefile 或者是 build.ninja 文件，甚至是 bash 脚本）
+
+如果你使用 `absl::Mutex`，`ABSL_GUARDED_BY` 之类的东西，就不用再自己去包装这些标注了。
+
+### 并发访问错误动态检查
+
+见 <https://clang.llvm.org/docs/ThreadSanitizer.html>
+
+### 线程安全容器
+
+C++ 标准库没有内置提供线程安全的容器，但是一些比较著名的第三方库提供了这样的功能：
+
+- [Intel TBB Containers](https://software.intel.com/content/www/us/en/develop/documentation/tbb-documentation/top/intel-threading-building-blocks-developer-guide/containers.html)
+- [Boost Lockfree](https://www.boost.org/doc/libs/1_76_0/doc/html/lockfree.html)
+- [Folly ConcurrentHashMap](https://github.com/facebook/folly/blob/master/folly/concurrency/ConcurrentHashMap.h)
+
+在用这些容器之前要三思：
+
+1. 线程安全只能 end-to-end 去设计和实现，多个模块内部的线程安全组合起来不一定是线程安全的
+1. 无锁容器未必比有锁容器快
