@@ -56,9 +56,6 @@ theme:
         name: 切换到浅色模式
   fonts: false
   features:
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.instant.progress
     - navigation.tracking
     - navigation.sections
     - navigation.expand
@@ -97,6 +94,41 @@ markdown_extensions:
   - pymdownx.superfences
 
 plugins:
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: zh
+          default: true
+          name: 简体中文
+        - locale: en
+          name: English
+          site_name: "C++ for Java Developers: A Starter's Guide"
+          site_description: "A starter's guide to C++ for Java developers, covering language features, memory model, RAII, toolchain, and performance tuning."
+          nav_translations:
+            "背景介绍": "Background"
+            "快速开始": "Quick Start"
+            "程序语言":
+            "类型": "Types"
+            "语法语义": "Syntax and Semantics"
+            "异常处理": "Exceptions"
+            "标准库": "Standard Library"
+            "第三方基础库": "Third Party Libraries"
+            "打包提供给其他语言使用": "FFI"
+            "工程化工具":
+            "构建系统": "Build Systems"
+            "静态工具": "Static Analysis"
+            "动态工具": "Dynamic Analysis"
+            "运行调试": "Debugging"
+            "性能分析": "Profiling"
+            "常见库介绍":
+            "基础库": "Fundamental"
+            "日志": "Logging"
+            "命令行解析": "CLI"
+            "测试": "Testing"
+            "序列化": "Serialization"
+            "通信": "Communication"
+            "常见 Idioms/Design Patterns": "Idioms and Patterns"
+            "参考资料": "References"
   - search:
       lang: zh
       separator: '[\s\u200b\-]'
