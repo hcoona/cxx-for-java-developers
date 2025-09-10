@@ -18,7 +18,7 @@ nav:
   - "快速开始": quickstart.md
   - "[WIP]程序语言":
       - "类型": core-language/types.md
-      - "[TODO]语法语义": core-language/syntax-and-semantics.md
+      - "语法语义": core-language/syntax-and-semantics.md
       - "异常处理": core-language/exceptions.md
       - "[TODO]标准库": core-language/standard-library.md
       - "[TODO]第三方基础库": core-language/third-party-libraries.md
