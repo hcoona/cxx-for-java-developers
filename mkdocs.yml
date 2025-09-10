@@ -37,7 +37,7 @@ nav:
       - "序列化": library/serialization.md
       - "通信": library/communication.md
   - "常见 Idioms/Design Patterns": idioms-and-patterns.md
-  - "[TODO]参考资料": references.md
+  - "参考资料": references.md
 
 theme:
   name: material
