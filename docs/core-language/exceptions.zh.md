@@ -25,22 +25,7 @@ Java 的 Checked Exception 机制虽然经常让人觉得非常烦躁，但是�
 如果你决定不使用异常机制，可以使用 `absl::Status` 作为 workaround。基本思路很简单，就是你总是返回一个东西，代表没有异常（`status.ok()`）或者有异常（`!status.ok()`），并且可以使用一些辅助方法判断是什么类型的异常（这点倒是跟 Java 差不多，Java 也是建议 catch 之后只检查几个异常大类——比如说 `IOException`——而不是检查一些细分小异常类型）。当你除了异常还需要返回别的东西的时候，可以选择搞一个 `struct` 打包返回一些东西，或者是把这些返回值甩到 output parameter 上（这点 Java 倒是没有这样的机制，类似于 C# 的 `ref` 关键字）。
 
 ```cpp
-absl::Status NewRandomAccessFile(const std::string& filename,
-                                 std::unique_ptr<RandomAccessFile>* result) {
-  if (filename.empty()) {
-    return InvalidArgumentError("|filename| must be assigned.");
-  }
-
-  // Check `man 2 open` for further details about |open|.
-  int fd = ::open(filename.c_str(), O_RDONLY);
-  if (fd < 0) {
-    return IOError(filename, errno);
-  }
-
-  // Return through output parameter |result|.
-  *result = std::make_unique<PosixRandomAccessFile>(filename, fd);
-  return absl::OkStatus();
-}
+--8<-- ".snippets/exceptions/001-status-example.cc:code"
 ```
 
 我承认 `absl::Status` 仍然还有很多问题，但是已经是一个比较简单的能实现我们大部分要求的工具了。尽管 `absl::Status` 也不携带 stacktrace 信息，但是由于它位于返回值上，所以这个调用路径的每个地方都需要去 check 其结果是 ok 与否并打日志，这样的话变相的也算是能知道一些 stacktrace 信息了。另外就是 `absl::Status` 也是有机会附带一些额外的信息的，功能详情见 <https://github.com/abseil/abseil-cpp/blob/d96e287417766deddbff2d01b96321288c59491e/absl/status/status.h#L573>
