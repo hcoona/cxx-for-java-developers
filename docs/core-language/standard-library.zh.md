@@ -52,9 +52,7 @@ C++ 中经常使用迭代器表示容器中的一个区间（C++ 20 之后有 Ra
 C++ 中还提供了反向迭代器用来进行反向遍历，即 `rbegin()` 和 `rend()`。可以通过调用其 `base()` 方法将其转为正向迭代器。通过调用 `std::make_reverse_iterator` 将正向迭代器转换为反向迭代器。这些不变式是成立的：
 
 ```cpp
-EXPECT_TRUE(std::make_reverse_iterator(it).base() == it);
-EXPECT_TRUE(v.rbegin().base() == v.end());
-EXPECT_TRUE(v.rend().base() == v.begin());
+--8<-- ".snippets/standard-library/001-iterator-reverse.cc:code"
 ```
 
 C++ 中的迭代器也是有着类别的。这主要是因为不同的容器中的数据的内存排列形式不同，有的可以高效的进行随机访问（比如数组），有的则不行（比如链表）；有的可以前进后退，有的只能前进（比如单向链表）。一个详细的列表和解释见 <https://en.cppreference.com/w/cpp/iterator>。
@@ -68,10 +66,7 @@ C++ 中的迭代器也是有着类别的。这主要是因为不同的容器中�
 首先是传参的时候要用引用或者指针，避免复制整个容器，这点是跟 Java 很不一样的。
 
 ```cpp
-int sum(const std::vector<int>& v);
-
-// !!! DON'T DO THIS !!!
-int sum_copy_whole_vector(std::vector<int> v);
+--8<-- ".snippets/standard-library/002-vector-pass-by-ref.cc:code"
 ```
 
 接下来要注意 `std::vector<bool>` 内部其实是个 bitmap 而不是一个数组，这是历史遗留问题。如果就是想要 bitmap，最好明确的使用 `std::bitset`；如果是想要使用 `bool` 数组，可以使用 `std::unique_ptr<bool[]>` 或者 `absl::FixedArray<bool>`。
@@ -79,19 +74,7 @@ int sum_copy_whole_vector(std::vector<int> v);
 最后要注意的是一个性能问题，如果有可能的话，调用 `reserve` 方法提前申请内存空间：
 
 ```cpp
-absl::Status ReadFeature(ByteBuffer* buffer, std::vector<int32_t>* feature) {
-  int64_t value_count;
-  RETURN_IF_NOT_OK(buffer->TryReadInt64(&value_count));
-
-  feature->reserve(static_cast<size_t>(value_count));
-  for (int64_t i = 0; i < value_count; i++) {
-    int32_t v;
-    RETURN_IF_NOT_OK(buffer->TryReadInt32(&v));
-    feature->emplace_back(v);
-  }
-
-  return absl::OkStatus();
-}
+--8<-- ".snippets/standard-library/003-vector-reserve.cc:code"
 ```
 
 /// admonition | 注意
@@ -103,20 +86,13 @@ absl::Status ReadFeature(ByteBuffer* buffer, std::vector<int32_t>* feature) {
 直到 C++20 和 C++23 才给各个容器类添加了 `contains` 方法。在这之前，我们得使用这样的形式来判断容器是否包含某元素：
 
 ```cpp
-bool Contains(const std::unordered_map<int, int>& map, int target) {
-  auto it = map.find(target);
-  // end() pos means not found.
-  return it != map.end();
-}
+--8<-- ".snippets/standard-library/004-contains-unordered-map.cc:code"
 ```
 
 但是要注意的是，所有 `std::string` 类的容器（比如说还有 `std::string_view`，`std::wstring` 等等），都没有使用找不到元素时返回 `end()` 位置的约定，而是搞了一个 `npos` 常量：
 
 ```cpp
-bool Contains(const std::string& str, char target) {
-  auto idx = str.find(target);
-  return idx != std::string::npos;
-}
+--8<-- ".snippets/standard-library/005-contains-string.cc:code"
 ```
 
 这主要是因为在 `std::string` 进入标准时还没有迭代器这么个东西。
@@ -130,19 +106,7 @@ bool Contains(const std::string& str, char target) {
 使用这两个容器的时候要特别注意，它们由于没有拷贝数据，所以其内容是否合法取决于原位置数据的合法性。
 
 ```cpp
-absl::string_view str_view;
-{
-  std::string str = "Hello World!";
-
-  str_view = str;
-  LOG(INFO) << str_view;  // Valid here.
-
-  str = "";
-  LOG(INFO) << str_view;  // Invalid here!
-
-  str_view = str;  // Valid again.
-}
-// Invalid again because |str| is destructed.
+--8<-- ".snippets/standard-library/006-string-view-lifetime.cc:code"
 ```
 
 另外值得一提的是，`absl::string_view` 既可以接受 `std::string` 也可以接受 C-style string 即 `char*`，因此在有些情况下（提供字符串字面量）的时候，性能可能比 `const std::string&` 更高。所以如果比较合适的，建议在参数中使用 `absl::string_view` 而非 `const std::string&`。
@@ -150,11 +114,7 @@ absl::string_view str_view;
 但是另一个要注意的点是，有些系统调用是要求提供 C-Style string 的，例如 `::open()`。这时候不能直接给 `absl::string_view::data()`，因为它可能不是以 `'\0'` 结尾的。
 
 ```cpp
-int OpenReadFile1(absl::string_view filename) {
-  // Must copy it to append \0 at the end.
-  std::string copied_filename(filename);
-  return ::open(copied_filename.c_str());
-}
+--8<-- ".snippets/standard-library/007-open-read-file.cc:code"
 ```
 
 这种情况下还是用 `const std::string&` 更高效。
@@ -176,25 +136,14 @@ C++ 标准提供的字符串 `contains` 甚至要到 C++23。可以使用 `absl:
 有的同学可能遇到过这样的困惑：
 
 ```cpp
-int F(const std::unordered_map<int, int>& m, int t) {
-  return m[t];
-}
+--8<-- ".snippets/standard-library/018-unordered-map-bad-lookup.cc:code"
 ```
 
 会产生如下编译错误：
 
 <!-- markdownlint-disable MD013 -->
 ```text
-a.cc:4:10: error: no viable overloaded operator[] for type 'const std::unordered_map<int, int>'
-        return m[t];
-               ~^~
-/usr/bin/../lib/gcc/x86_64-linux-gnu/10/../../../../include/c++/10/bits/unordered_map.h:983:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<int, int>', but method is not marked const
-      operator[](const key_type& __k)
-      ^
-/usr/bin/../lib/gcc/x86_64-linux-gnu/10/../../../../include/c++/10/bits/unordered_map.h:987:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<int, int>', but method is not marked const
-      operator[](key_type&& __k)
-      ^
-1 error generated.
+--8<-- ".snippets/standard-library/017-unordered-map-operator-error.txt:code"
 ```
 <!-- markdownlint-enable MD013 -->
 
@@ -203,14 +152,7 @@ a.cc:4:10: error: no viable overloaded operator[] for type 'const std::unordered
 解决方法就是使用 `contains` 方法（C++20 以后），或者是 `find()` 方法。
 
 ```cpp
-int F(const std::unordered_map<int, int>& m, int t) {
-  auto it = m.find(t);
-  if (it == m.end()) {
-    return -1;
-  }
-
-  return it->second;
-}
+--8<-- ".snippets/standard-library/019-unordered-map-find.cc:code"
 ```
 
 ### 避免在严肃的用途使用 `iostream` 库提供的组件
@@ -259,7 +201,7 @@ STL 中包括了一些常见的算法。我个人觉得比较常用的有这些�
 我们想要找到最后一个不大于给定值的位置，就得沿着容器反着找。把容器反序来看，是一个降序序列，正序找到最后一个不大于给定值的位置，即反序找到第一个不大于给定值的位置，应该使用 `lower_bound`：
 
 ```cpp
-auto it = std::lower_bound(c.rbegin(), c.rend(), std::greater<>());
+--8<-- ".snippets/standard-library/008-find-last-le-not-working.cc:code"
 ```
 
 这么说起来可能有些绕，用数学语言描述可能更容易理解一些。
@@ -271,8 +213,7 @@ auto it = std::lower_bound(c.rbegin(), c.rend(), std::greater<>());
 需要注意 `remove_if` 只是将符合条件的元素挪到容器末尾处，而没有真正删除这些元素。所以需要这样的模式调用：
 
 ```cpp
-std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-v.erase(std::remove_if(v.begin(), v.end(), IsOdd), v.end());
+--8<-- ".snippets/standard-library/009-erase-remove-idiom.cc:code"
 ```
 
 ## 随机数
@@ -290,19 +231,7 @@ Java 中的随机数比较简单，就是调用 `Random` 类生成就行了。�
 一个比较全面的介绍见 <https://en.cppreference.com/w/cpp/header/random>。这里简单给个例子：
 
 ```cpp
-// Will be used to obtain a seed for the random number engine
-std::random_device rd;
-
-// Standard mersenne_twister_engine seeded with |rd()|.
-std::mt19937 gen(rd());
-
-// Produce uniform distribution for range [1, 6] (both boundary inclusive).
-std::uniform_int_distribution<> distrib(1, 6);
-
-v->reserve(n);
-for (int i = 0; i < n; i++) {
-  v->emplace_back(distrib(gen));
-}
+--8<-- ".snippets/standard-library/010-random-example.cc:code"
 ```
 
 这里不能简单地用时间来初始化随机数生成器，安全性较差（对，说的就是你—— `srand(time(NULL))`）。一般是从系统硬件熵池中取一小段数据出来初始化随机数生成器，这样比较安全。这里也不能简单地使用 `% 6` 的方法来产生 [0, 5] 区间的整数，因为这样产生的分布不是均匀的（可以试着计算一下 [1, 8] 映射到 [1, 6]，简单取模的话概率分布是什么样子的）。
@@ -345,14 +274,7 @@ C++ 标准库中提供了 3 种时钟：
 > BTW，如果想要使用其他物理量可以看一下 <https://github.com/mpusz/units>
 
 ```cpp
-auto start = std::chrono::steady_clock::now();
-LOG(INFO) << "f(42) = " << fibonacci(42);
-auto end = std::chrono::steady_clock::now();
-
-std::chrono::duration<double> elapsed = end - start;
-LOG(INFO) << "elapsed time: "
-          << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count()
-          << "s\n";
+--8<-- ".snippets/standard-library/011-chrono-measure-time.cc:code"
 ```
 
 由于我们经常需要和 epoch 时间打交道，因此特别提供了相关的转换方法：
@@ -372,13 +294,7 @@ LOG(INFO) << "elapsed time: "
 ### Sleep
 
 ```cpp
-std::this_thread::sleep_for(std::chrono::milliseconds(kSleepMillis));
-
-// Since c++14
-std::this_thread::sleep_for(2000ms);
-
-// Abseil
-absl::SleepFor(absl::Milliseconds(kSleepMillis));
+--8<-- ".snippets/standard-library/012-sleep-examples.cc:code"
 ```
 
 但是睡过去容易醒过来难，如有可能，强烈建议考虑是不是应该传一个 `absl::Notification` 进来，然后使用 `notification.WaitForNotificationWithTimeout(kSleepInterval)`。具体例子见后面“常见编程 Pattern”里面的“后台线程周期性活动”。
@@ -430,51 +346,17 @@ absl::SleepFor(absl::Milliseconds(kSleepMillis));
 在 Java 中一般使用这样的手法来确保锁被释放了：
 
 ```java
-lock.lock();  // block until condition holds
-try {
-    // ... method body
-} finally {
-    lock.unlock()
-}
+--8<-- ".snippets/standard-library/013-java-lock-example.java:code"
 ```
 
 在 C++ 中一般使用这样的手法：
 
 ```cpp
-{
-  std::lock_guard lock(mutex);  // Locking when |lock| creating.
-  // locked here.
-}  // Auto unlock when |lock| destructing
-
-{
-  absl::MutexLock(&mutex);
-  // ...
-}
+--8<-- ".snippets/standard-library/014-cpp-lock-example.cc:code"
 ```
 
-读锁需要使用 `std::shared_lock`（`absl::ReaderMutexLock`），写锁需要使用 `std::unique_lock`（`absl::WriterMutexLock`）。
-
-需要额外关注的一个事情是，在类中声明成员变量 `std::mutex`/`absl::Mutex` 的时候，通常会使用 `mutable` 关键字进行修饰。这是因为如果需要对外提供 `const` 修饰符修饰的成员方法，访问被 `mutex` 保护的成员时，需要加锁/解锁，这时需要对 `mutex` 进行修改。`mutable` 修饰符允许在 `const` 上下文中修改一个成员变量。
-
 ```cpp
-class MyIntCounter {
- public:
-  int32_t value() const;
-
- private:
-  mutable absl::Mutex mutex_;
-  // See static analysing thread-safety errors for further details about ABSL_GUARDED_BY.
-  // Intrduced in the following subsection.
-  int32_t value_ ABSL_GUARDED_BY(mutex_);
-};
-
-int32_t MyIntCounter::value() const {
-  // clang++ with -Wthread-safety would report error if we access |value_| without
-  // locking the |mutex_|.
-  // See https://releases.llvm.org/8.0.1/tools/clang/docs/ThreadSafetyAnalysis.html
-  absl::MutexLock lock(&mutex_);
-  return value_;
-}
+--8<-- ".snippets/standard-library/015-mutable-mutex-example.cc:code"
 ```
 
 ### 原子访问/`volatile` (Updated 2022-02-14)
@@ -503,9 +385,7 @@ C++ 中不需要进行特殊的处理，或者是类型包裹（比如说 `java.
 1. 如果 Thread-Local 变量比较大的话，在内核比较多的机器上有可能会占用很多内存。（这是个程序设计问题，不是 C++ 自身的问题，也不是操作系统的问题）
 
 ```cpp
-static thread_local int32_t id_generator;
-
-static thread_local int32_t id_generator_2 = InitIdGenerator();
+--8<-- ".snippets/standard-library/016-thread-local-example.cc:code"
 ```
 
 ### 信号量/Latch/Barrier/条件变量

@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2021 Shuai Zhang
+#
+# SPDX-License-Identifier: CC-BY-NC-ND-4.0
+
+# --8<-- [start:code]
+a.cc:4:10: error: no viable overloaded operator[] for type 'const std::unordered_map<int, int>'
+        return m[t];
+               ~^~
+/usr/bin/../lib/gcc/x86_64-linux-gnu/10/../../../../include/c++/10/bits/unordered_map.h:983:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<int, int>', but method is not marked const
+      operator[](const key_type& __k)
+      ^
+/usr/bin/../lib/gcc/x86_64-linux-gnu/10/../../../../include/c++/10/bits/unordered_map.h:987:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<int, int>', but method is not marked const
+      operator[](key_type&& __k)
+      ^
+1 error generated.
+# --8<-- [end:code]
