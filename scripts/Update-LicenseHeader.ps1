@@ -73,7 +73,7 @@ try {
         "docs/**/*.html" "docs/**/*.css"
 	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
         "docs/.snippets/**/*.h" "docs/.snippets/**/*.cc" `
-        "docs/.snippets/**/*.sh"
+        "docs/.snippets/**/*.sh" "docs/.snippets/**/*.java"
 	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
         --style python `
         "docs/.snippets/**/*.bazel"
