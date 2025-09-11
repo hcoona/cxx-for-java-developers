@@ -17,43 +17,7 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
 ///
 
 ```cpp
-// example.h
-constexpr int64_t kAnswer = 42;
-
-void SayHello();
-
-class Example {
- public:
-  Example();
-  virtual ~Example();
-
-  int64_t IncThenGet();
-
- private:
-  int64_t data_{kAnswer};
-};
-
-// The implementation of this method must be defined in the header file.
-template <typename T>
-void ignore_result(const T&) {
-}
-
-// example.cc
-void SayHello() {
-  LOG(INFO) << "Hello!";
-}
-
-Example::Example() {
-  LOG(INFO) << "Answer = " << data_;
-}
-
-Example::~Example() {
-  LOG(INFO) << "Answer = " << data_;
-}
-
-int64_t Example::IncThenGet() {
-  return ++data_;
-}
+--8<-- ".snippets/syntax-and-semantics/001-header-impl-example.cc:code"
 ```
 
 ## Package 和 Namespace
@@ -98,21 +62,7 @@ int64_t Example::IncThenGet() {
 在 Java 中使用 `@Override` annotation 来修饰一个被重写的方法，在 C++ 中，我们更进一步也搞了一个 specifier 来搞这个事情。
 
 ```cpp
-struct Base {
-  virtual void foo();
-};
-
-struct A : Base {
-  void foo() final; // Base::foo is overridden and A::foo is the final override
-  void bar() final; // Error: bar cannot be final as it is non-virtual
-};
-
-struct B final : A {    // struct B is final
-  void foo() override;  // Error: foo cannot be overridden as it is final in A
-};
-
-struct C : B {  // Error: B is final
-};
+--8<-- ".snippets/syntax-and-semantics/002-virtual-final-override.cc:code"
 ```
 
 ## 接口类型和纯虚函数
@@ -120,10 +70,7 @@ struct C : B {  // Error: B is final
 C++ 中没有接口类型，我们可以认为一个没有成员变量的抽象类就是一个 interface。由于 C++ 中没有多继承的限制，所以这是成立的。我们使用这样的方法来声明一个纯虚函数：
 
 ```cpp
-class Base {
- public:
-  virtual void Say() = 0;
-};
+--8<-- ".snippets/syntax-and-semantics/003-pure-virtual-interface.cc:code"
 ```
 
 /// admonition | 注意
@@ -145,49 +92,19 @@ class Base {
 RAII（Resource Acquisition Is Initialization），类似于 Java 中的 try-with-resources 语句，可以通过对象生命周期的控制，来控制资源。比如 Java 中常用这样的模式来控制文件资源的生命周期：
 
 ```java
-static String readFirstLineFromFile(String path) throws IOException {
-    try (BufferedReader br =
-                   new BufferedReader(new FileReader(path))) {
-        return br.readLine();
-    }
-}
+--8<-- ".snippets/syntax-and-semantics/004-raii-java-example.java:code"
 ```
 
 在 `try` 语句块结束的时候，会自动调用 `BufferedReader` 类型的 `close()` 方法，从而完成底层操作系统文件句柄的关闭。类似的，C++ 可以在析构函数中进行包装，从而完成这样的管理操作：
 
 ```cpp
-class UniqueFileDescriptor {
- public:
-  static constexpr int kInvalidFileDescriptor = -1;  // From man 2 open
-
-  UniqueFileDescriptor() = default;
-  explicit UniqueFileDescriptor(int fd) : fd_(fd) {}
-  ~UniqueFileDescriptor() {
-    if (fd_ != UniqueFileDescriptor::kInvalidFileDescriptor) {
-      ::close(fd_);  // Should LOG error if failed to close it.
-    }
-  }
-
- private:
-  int fd_{UniqueFileDescriptor::kInvalidFileDescriptor};
-};
+--8<-- ".snippets/syntax-and-semantics/005-raii-cpp-example.cc:code"
 ```
 
 在 C++ 中，我们经常会选择在栈上分配小对象，栈上对象的生命周期是和其作用域绑定的。有的时候我们需要将管理的资源传递给作用域外的管理者进行管理，此时我们就需要 move 语义，将一个对象内部的内容“转移”给其他对象。
 
 ```cpp
-UniqueFileDescriptor unique_fd;
-{
-  UniqueFileDescriptor fd(::open(filename.c_str(), "r"));
-  if (fd.fd() == UniqueFileDescriptor::kInvalidFileDescriptor) {
-    return absl::UnknownError("Failed to open file.");
-  }
-
-  /* do something ... */
-
-  // Move the control to outer |unique_fd|.
-  unique_fd = std::move(fd);
-}
+--8<-- ".snippets/syntax-and-semantics/006-move-semantics.cc:code"
 ```
 
 ## 运算符重载
@@ -207,17 +124,7 @@ C++ 中允许重载运算符，比较常用的用法有这么几种：
 C++ 中重载运算符的方法有 2 种，一种是成员函数，一种是非成员函数：
 
 ```cpp
-class Point {
- public:
-  bool operator<(Point&);  // Declare a member operator overload.
-
-  // Declare addition operators.
-  friend Point operator+(Point&, int);
-  friend Point operator+(int, Point&);
-};
-
-// Declare a global operator overload.
-bool operator==(const Point& lhs, const Point& rhs);
+--8<-- ".snippets/syntax-and-semantics/007-operator-overload-declarations.cc:code"
 ```
 
 如果你需要访问 private 成员变量，那基本上只能采用 `friend` 修饰的成员函数。
@@ -225,46 +132,19 @@ bool operator==(const Point& lhs, const Point& rhs);
 ### 相等可比较和哈希函数
 
 ```cpp
-// Overload == operator for equality comparison.
-// The detail requirements for the meaning of == is illustrated in
-// https://en.cppreference.com/w/cpp/concepts/equality_comparable
-inline bool operator==(const X& lhs, const X& rhs) { /* do actual comparison */ }
-inline bool operator!=(const X& lhs, const X& rhs) { return !(lhs == rhs); }
+--8<-- ".snippets/syntax-and-semantics/008-equality-comparable.cc:code"
 ```
 
 通常我们重载相等比较，还希望将这个类型用于 HashMap 等数据结构中，此时我们还需要为这个数据类型提供哈希函数。建议借助 Abseil 的 Hash 库实现之：
 
 ```cpp
-// https://abseil.io/docs/cpp/guides/hash
-class Circle {
- public:
-  ...
-
-  template <typename H>
-  friend H AbslHashValue(H h, const Circle& c) {
-    return H::combine(std::move(h), c.center_, c.radius_);
-  }
-
-  ...
-
- private:
-  std::pair<int, int> center_;
-  int radius_;
-};
-
-// Use it in unordered_map as Key type.
-std::unordered_map<Circle, MyValue, absl::Hash<Circle>> my_map;
+--8<-- ".snippets/syntax-and-semantics/009-absl-hash-circle.cc:code"
 ```
 
 ### 偏序关系
 
 ```cpp
-// The implementation of operator< needs to satisfy the following requirements:
-// https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-inline bool operator< (const X& lhs, const X& rhs) { /* do actual comparison */ }
-inline bool operator> (const X& lhs, const X& rhs) { return rhs < lhs; }
-inline bool operator<=(const X& lhs, const X& rhs) { return !(lhs > rhs); }
-inline bool operator>=(const X& lhs, const X& rhs) { return !(lhs < rhs); }
+--8<-- ".snippets/syntax-and-semantics/010-strict-weak-order.cc:code"
 ```
 
 ### 全序关系
@@ -274,24 +154,13 @@ inline bool operator>=(const X& lhs, const X& rhs) { return !(lhs < rhs); }
 一般是先实现一个类似于 Java 中的 `compareTo()` 方法，然后用之实现下述运算符：
 
 ```cpp
-inline bool operator==(const X& lhs, const X& rhs) { return cmp(lhs,rhs) == 0; }
-inline bool operator!=(const X& lhs, const X& rhs) { return cmp(lhs,rhs) != 0; }
-inline bool operator< (const X& lhs, const X& rhs) { return cmp(lhs,rhs) <  0; }
-inline bool operator> (const X& lhs, const X& rhs) { return cmp(lhs,rhs) >  0; }
-inline bool operator<=(const X& lhs, const X& rhs) { return cmp(lhs,rhs) <= 0; }
-inline bool operator>=(const X& lhs, const X& rhs) { return cmp(lhs,rhs) >= 0; }
+--8<-- ".snippets/syntax-and-semantics/011-total-order.cc:code"
 ```
 
 如果是 C++20 的话，可以用新添加的三相比较运算符 `<=>`：
 
 ```cpp
-struct Record {
-  std::string name;
-  unsigned int floor;
-  double weight;
-  auto operator<=>(const Record&) const = default;
-};
-// records can now be compared with ==, !=, <, <=, >, and >=
+--8<-- ".snippets/syntax-and-semantics/012-spaceship-operator.cc:code"
 ```
 
 ## Lambda 表达式
@@ -299,18 +168,7 @@ struct Record {
 C++ 的 Lambda 表达式和 Java 类似，但是要求手工列出需要 capture 哪些变量，以及是以何种方式（复制，引用，其他复杂操作）进行 capture。capture all 是一种不要的实践，不建议这么做。
 
 ```cpp
-int a;
-int b;
-std::unique_ptr<int> c;
-int d;
-
-// Take care that the lambda need to be called while |b| is still alive.
-auto lambda =
-    [a /* copy a */, &b /* reference b */, c = std::move(c) /* calculated result */](
-      /* parameters */) {
-      // you cannot use |d| because you didn't capture it.
-      // ensure the reference captured variables are still living.
-    }
+--8<-- ".snippets/syntax-and-semantics/013-lambda-capture.cc:code"
 ```
 
 ## C++ 中的函数可以不在类里（特别强调）
@@ -318,24 +176,15 @@ auto lambda =
 所以不要再写这样的代码了：
 
 ```java
-final class MyUtil {
-  private MyUtil() {}
-
-  static void SayHello() { System.out.println("Hello!"); }
-}
+--8<-- ".snippets/syntax-and-semantics/014-java-util-class.java:code"
 ```
 
 ```cpp
-class MyUtil final {
- public:
-  MyUtil() = delete;
-
-  static void SayHello();
-};
+--8<-- ".snippets/syntax-and-semantics/015-cpp-static-class.cc:code"
 ```
 
 直接写这个方法就行了：
 
 ```cpp
-void SayHello();
+--8<-- ".snippets/syntax-and-semantics/016-cpp-free-function.cc:code"
 ```
