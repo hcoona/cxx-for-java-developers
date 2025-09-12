@@ -60,10 +60,7 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
 使用无符号整型的一个常见错误示例：
 
 ```cpp
-// Loop never end because |unsigned int| would wrap to |UINT_MAX| when counting down
-// beyond 0.
-for (auto i = v.size(); i >= 0; --i) {
-}
+--8<-- ".snippets/types/primitive-types/001-unsigned-loop.cc:code"
 ```
 
 /// admonition | TODO
@@ -104,50 +101,13 @@ C++ 中没有包可见性级别。
 如有可能，我们应当尽可能地在声明成员变量的同时指定初始化值，这样可以避免我们添加构造函数的时候漏掉一些成员变量，而且这个值和声明的地方比较近，也容易被找到。将成员变量初始化为某个常量/字面量的场景，通常使用这种方式，例如：
 
 ```cpp
-class Person {
-  //...
- private:
-  static constexpr int32_t kUnspecifiedAge = -1;
-
-  std::string name_{};            // Initialized with an empty string.
-  int32_t age_{kUnspecifiedAge};  // Initialized with an constant.
-};
-
-// Defined in person.cc, prior to C++17.
-constexpr int32_t Person::kUnspecifiedAge;
+--8<-- ".snippets/types/user-types/001-person-default-init.h:code"
 ```
 
 如果需要在构造函数参数中传入一些值用于初始化，那么我们只能选择另外 2 种方式。在这种情况下，我们也应当尽可能在构造函数的初始化列表中进行初始化。这样做性能更好一些。最后别无选择的情况下，再使用函数体。
 
 ```cpp
-class Person {
- public:
-  Person() = default;  // Use default keyword to generate default constructor.
-                       // Provide a default constructor is useful for receiving
-                       // values from output parameters.
-                       //
-                       // Example:
-                       //   Person p;
-                       //   Status s = LoadPerson(db, key, &p);
-                       //   CHECK(s.ok()) << "Failed to load. reason=" << s;
-
-  // Although |name_| & |age_| default value is specified during declaration,
-  // the member initializer list would override it when using this constructor.
-  Person(std::string name, int32_t age) : name_(std::move(name)), age_(age) {
-    // Execute constructor body after member initializer list executed.
-    CHECK(!name_.empty());  // Cannot use |name| here because it already moved.
-    CHECK_GT(age_, 0);
-  }
-
- private:
-  static constexpr int32_t kUnspecifiedAge = -1;
-
-  std::string name_{};            // Initialized with an empty string.
-  int32_t age_{kUnspecifiedAge};  // Initialized with an constant.
-};
-
-// Defined in person.cc, prior to C++17.
-constexpr int32_t Person::kUnspecifiedAge;
+--8<-- ".snippets/types/user-types/002-person-ctor-initlist.h:code"
 ```
 
 /// admonition | 注意
@@ -157,52 +117,13 @@ constexpr int32_t Person::kUnspecifiedAge;
 实际上不管怎么写初始化列表，实际上在进行初始化的时候，都是按照成员变量声明的顺序执行的。所以一旦这两个顺序不一致了，就很容易造成误解。在一些特定情况下，很容易出错，例如：
 
 ```cpp
-class Person {
- public:
-  Person() = default;
-
-  // !!! THIS IS AN INCORRECT PRACTICE !!!
-  Person(std::string name) :
-    // Expecting |name| valid here, but actually not! UNDEFINED BEHAVIOR!
-    id_(absl::StrCat(name, "_", GetNextUniqueId())),
-    // The next line would be executed before initializing |id_|.
-    name_(std::move(name)) {}
-
- private:
-  std::string name_;
-  std::string id_;
-};
+--8<-- ".snippets/types/user-types/003-person-wrong-order.h:code"
 ```
 
 析构函数就是 C++ 中类似于 [`AutoClosable.close()`](https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html#close--) 的方法。可以认为 C++ 中的每一个对象实例都是包含在 Java 的 [try-with-resources](https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html) 块中的，只要超出作用域，就会立刻调用析构函数。
 
 ```cpp
-class File {
- public:
-  static constexpr int kInvalidFileDescriptor = -1;
-
-  File() = default;
-  File(int fd) : fd_(fd) {}
-
-  // Close OS managed resource during destruction.
-  // Example:
-  //   {
-  //     File file(::open(filename, O_RDONLY));
-  //     PCHECK(file.valid()) << "Failed to open file '" << filename << "'.";
-  //     // Read file contents...
-  //   }  // Execute ~File() automatically to close the OS managed resource.
-  ~File() {
-    if (fd != kInvalidFileDescriptor) {
-      PCHECK(::close(fd) == -1) << "Failed to close file.";
-    }
-  }
-
- private:
-  int fd_{kInvalidFileDescriptor};
-};
-
-// Defined in file.cc, prior to C++17.
-constexpr int File::kInvalidFileDescriptor;
+--8<-- ".snippets/types/user-types/004-file-raii.h:code"
 ```
 
 /// admonition | 注意
@@ -212,52 +133,13 @@ constexpr int File::kInvalidFileDescriptor;
 通常实践中，建议不使用异常处理（原因见 [Google C++ Style Guide 相关讨论](https://google.github.io/styleguide/cppguide.html#Exceptions)）。在不使用异常机制的情况下，通常采用返回 `Status` 类的方式来模拟抛异常和捕获异常的过程。在这种情况下，建议使用这样的模式来解决构造函数需要处理并返回错误的情况：
 
 ```cpp
-class HttpClient {
- public:
-  static absl::StatusOr<HttpClient> Make(HttpClientOptions options) {
-    HttpClient client(std::move(options));
-    absl::Status s = client.Init();
-    if (!s.ok()) {
-      return s;
-    }
-
-    return client;
-  }
-
- protected:
-  // Construct a |HttpClient| instance, must call |Init()| immediately after
-  // creation. Use |explicit| keyword to prevent implicit cast.
-  explicit HttpClient(HttpClientOptions options)
-      : options_(std::move(options)) {}
-
-  absl::Status Init() { return RefreshOauth2Token(); }
-
-  absl::Status RefreshOauth2Token();
-
- private:
-  HttpClientOptions options_{};
-};
+--8<-- ".snippets/types/user-types/005-http-client-factory.h:code"
 ```
 
 注意到这里构造函数使用了 `explicit` 关键字，这是因为该构造函数只有 1 个参数，这种情况下记住一定要用 `explicit` 关键字，否则将会发生参数到该类型的隐式类型转换。隐式类型转换总是我们需要避免的，因为这会破坏我们的类型系统。
 
 ```cpp
-class ImplicitCastAllowedInt {
- public:
-  ImplicitCastAllowedInt(int value);
-};
-
-class ImplicitCastDisallowedInt {
- public:
-  explicit ImplicitCastDisallowedInt(int value);
-};
-
-void PassImplicitCastAllowedInt(ImplicitCastAllowedInt);
-void PassImplicitCastDisallowedInt(ImplicitCastDisallowedInt);
-
-PassImplicitCastAllowedInt(
-    1);  // Implicit cast 1 to ImplicitCastAllowedInt(1)
-PassImplicitCastDisallowedInt(1);  // Won't compile!
+--8<-- ".snippets/types/user-types/006-implicit-explicit.h:code"
 ```
 
 /// admonition | 注意
@@ -293,13 +175,7 @@ C++ 中在构造函数中调用虚函数的话，保证只调用其在父类中�
 Java 中自定义类型有一个比较大的缺憾，即无法定义“值类型”。在 Java 中，`int` 是一个值类型，而 `Integer` 是一个引用类型，他们之间一个显著的区别如下：
 
 ```java
-int a;
-int b;
-b = a; // Copy the value of `a` to `b`, both `a` and `b` have the same value.
-
-Integer c;
-Integer d;
-d = c; // Copy the reference from `c` to `d`, both `c` and `d` reference the same value.
+--8<-- ".snippets/types/user-types/008-java-value-vs-reference.java:code"
 ```
 
 /// admonition | 注意
@@ -311,50 +187,7 @@ d = c; // Copy the reference from `c` to `d`, both `c` and `d` reference the sam
 下面给出一个在 C++ 中创建“引用类型”的例子：
 
 ```cpp
-// We can copy either the value or the reference of a ValueType.
-//
-// This is a trivial type. The compiler would generate the default constructor,
-// default copy constructor & copy assignment operator, default move constructor &
-// move assignment operator, default destructor for it. As a result, it's copyable &
-// moveable.
-//
-// Example:
-//   ValueType a;
-//   ValueType b = a;   // Allowed to copy the value.
-//   ValueType& c = a;  // Allowed to reference the value.
-struct ValueType {
-  int32_t id;
-  std::string name;
-};
-
-// We cannot copy the value of a RefrenceType instance.
-// We can only copy the reference to a ReferenceType instance.
-//
-// Example:
-//   ReferenceType a(2, "mock_name");
-//   ReferenceType b = a;   // !!!DISALLOW!!! Won't compile!
-//   ReferenceType& b = a;  // Allowed to reference a ReferenceType instance.
-class ReferenceType {
- public:
-  ReferenceType(int32_t id, std::string name) : id_(id), name_(std::move(name)) {}
-  // Make the destructor virtual to allow children override it.
-  virtual ~ReferenceType() = default;
-
-  // Disallow copy
-  ReferenceType(const ReferenceType&) = delete;
-  ReferenceType& operator=(const ReferenceType&) = delete;
-
-  // Allow move, move means steal the content of `other` instance.
-  // Don't panic. Would talk about move in following chapters.
-  ReferenceType(ReferenceType&& other) : id_(other.id_), name_(std::move(other.name_)) {
-    other.id_ = 0;
-  }
-  ReferenceType& operator=(ReferenceType&& other) {
-    id_ = other.id_;  // Cannot move int, it's a primitive type.
-    other.id_ = 0;    // Copy then clear the field.
-    name_ = std::move(other.id_);  // Move std::string
-  }
-};
+--8<-- ".snippets/types/user-types/007-value-vs-reference.h:code"
 ```
 
 简单来说，引用类型应该：
@@ -381,22 +214,13 @@ class ReferenceType {
 回忆 Java，我们几乎所有的值类型都是在栈上创建的，所有的引用类型都是在堆上创建的：
 
 ```java
-int a = 3;                   // Construct value type on the stack.
-Integer b = new Integer(5);  // Construct reference type on the heap.
+--8<-- ".snippets/types/user-types/009-java-stack-heap.java:code"
 ```
 
 在 C++ 中我们是这样处理的：
 
 ```cpp
-int a = 3;                              // Create on stack.
-
-// Always use smart pointers, never use `new` keyword & `delete` keyword.
-// Don't panic. Would talk about it in following sections.
-// Check following documents for further details:
-// * https://en.cppreference.com/w/cpp/memory
-// * https://www.stroustrup.com/C++11FAQ.html#std-unique_ptr
-auto b = std::make_unique<Integer>(5);  // Create on heap & forbid ownership sharing.
-auto c = std::make_shared<Integer>(7);  // Create on heap & allow ownership sharing.
+--8<-- ".snippets/types/user-types/010-cpp-stack-heap.cc:code"
 ```
 
 ## 类型别名
@@ -404,30 +228,13 @@ auto c = std::make_shared<Integer>(7);  // Create on heap & allow ownership shar
 在 C++ 中可以生成一个类型的别名，使用别名和使用原名是等价的。在 C 语言中就提供了这样的功能，通过使用 `typedef` 关键字实现。在 C++ 中，因为希望支持 template（后续会介绍），所以引入了新的关键字 `using`。建议总是使用 `using` 定义别名。
 
 ```cpp
-// Deprecated
-typedef int int32_t;
-
-// Suggest
-using int32_t = int;
-
-// Template
-template <typename T>
-using MyArray = std::vector<T>;
+--8<-- ".snippets/types/type-alias/001-basic-aliases.cc:code"
 ```
 
 C++ 类型别名等同于原类型，这个特性有的时候挺方便的，有的时候则会带来一些困扰。举个例子，我们有的时候为同一个类型创造了两个不同用途的别名 A 和 B，这个时候我们是不希望将 B 类型的对象赋值给 A 类型的对象的。
 
 ```cpp
-using Orange = int;
-using Apple = int;
-
-Apple apple(2);
-Orange orange = apple;  // Orange should not be able to become an Apple.
-Orange x = orange + apple;  // Shouldn't add Oranges and Apples.
-if (orange > apple);  // Shouldn't compare Apples to Oranges.
-
-void foo(Orange);
-void foo(Apple);  // Redefinition.
+--8<-- ".snippets/types/type-alias/002-alias-misuse.cc:code"
 ```
 
 Workaround 的方法见 [StrongAlias](https://source.chromium.org/chromium/chromium/src/+/main:base/types/strong_alias.h;drc=14bffe4980429ebe1179319e15e049236252f8c1)（以及给 C++ 的提案 [New paper: N3741, Toward Opaque Typedefs for C++1Y, v2 -- Walter Brown : Standard C++](https://isocpp.org/blog/2013/08/new-paper-n3741-toward-opaque-typedefs-for-c1y-v2-walter-brown)）
@@ -439,10 +246,7 @@ Workaround 的方法见 [StrongAlias](https://source.chromium.org/chromium/chrom
 `std::shared_ptr` 和 `std::unique_ptr` 在 C++ 中被称为智能指针（Smart Pointers），这是相对于裸指针（Raw Pointers）而言的。举个关于裸指针的例子：
 
 ```cpp
-Integer* b = new Integer(5);
-// Calculate with raw pointer b
-// ...
-delete b;  // !!!DO REMEMBER TO DELETE IT!!!
+--8<-- ".snippets/types/smart-pointers/001-raw-pointer.cc:code"
 ```
 
 我们通过使用 `new` 关键字在堆上创建一个对象，在使用完成后通过 `delete` 关键字将分配给它的内存空间回收。这里有个关键的问题在于我们必须记住要去 `delete` 它，这对于一些比较复杂的控制流是比较难实现的（比如中间有一些 if-return 的模式）。智能指针相当于是一个分配在堆上的值类型对象，在超出作用域时会自动析构，这样我们就有机会在析构的时候去做点事情，这一概念被称为 RAII（Resource Acquisition Is Initialization，后面会讲）。
@@ -458,19 +262,7 @@ delete b;  // !!!DO REMEMBER TO DELETE IT!!!
 一个常见的解法是把所有权单独处理，以单向链表为例：
 
 ```cpp
-std::vector<std::unique_ptr<LinkedNode>> nodes;
-LinkedNode* head;
-
-auto c = std::make_unique<LinkedNode>("c", /* next */ nullptr);
-auto b = std::make_unique<LinkedNode>("b", /* next */ c.get());
-auto a = std::make_unique<LinkedNode>("a", /* next */ b.get());
-c->set_next(a.get());
-
-head = a.get();
-
-nodes.emplace_back(std::move(c));
-nodes.emplace_back(std::move(b));
-nodes.emplace_back(std::move(a));
+--8<-- ".snippets/types/smart-pointers/002-linked-list-ownership.cc:code"
 ```
 
 智能指针还可以自行指定 Deleter 函数，具体用法见相关文档。
@@ -482,61 +274,7 @@ nodes.emplace_back(std::move(a));
 上面说的还有点抽象，这里举个例子说明一下。假设说我们有一个服务，可以通过 `healthy()` 方法判断当前这个服务是否正常，服务不正常的时候可能是服务已经卡住了或者什么别的问题；有一个 WatchDog 检测这个类是否在正常工作。
 
 ```cpp
-void NotifyUnhealthy();
-
-class MyServiceImpl : public Service {
- public:
-  Status Start() override;
-  Status Stop() override;
-
-  bool healthy() const override;
-  absl::Time last_known_healthy_time() const override;
-};
-
-class MyServiceWatchdogServiceImpl : public Service {
- public:
-  explicit MyServiceWatchdogServiceImpl(
-      std::weak_ptr<MyServiceImpl> weak_my_service)
-      : weak_my_service_(std::move(weak_my_service)) {}
-
-  Status Start() override;
-  Status Stop() override;
-
- private:
-  void BackgroundTaskEntryPoint();
-
-  std::unique_ptr<std::thread> background_thread_;
-  absl::Notification stopping_notification_;
-
-  std::weak_ptr<MyServiceImpl> weak_my_service_;
-};
-
-void MyServiceWatchdogServiceImpl::BackgroundTaskEntryPoint() {
-  absl::optional<absl::Time> previous_known_healthy_time;
-  while (
-      !stopping_notification_.WaitForNotificationWithTimeout(kLoopInterval)) {
-    std::shared_ptr<MyServiceImpl> shared_my_service = weak_my_service_.lock();
-    if (!shared_my_service) {
-      // The instance of my_service was destroyed.
-      NotifyUnhealthy();
-      break;
-    }
-
-    if (shared_my_service->healthy()) {
-      if (previous_known_healthy_time.has_value() &&
-          (shared_my_service->last_known_healthy_time() -
-               previous_known_healthy_time.value() >
-           kHealthyCheckFailureDuration)) {
-        // Healthy state not updated for a while, regard it unhealthy.
-        NotifyUnhealthy();
-        break;
-      }
-
-      previous_known_healthy_time =
-          shared_my_service->last_known_healthy_time();
-    }
-  }
-}
+--8<-- ".snippets/types/smart-pointers/003-watchdog-weak-ptr.cc:code"
 ```
 
 ## 只读类型
@@ -544,7 +282,7 @@ void MyServiceWatchdogServiceImpl::BackgroundTaskEntryPoint() {
 在 Java 中可以使用 `final` 关键字来标记一个变量只读，但是这个只读的语义其实有些问题，特别是对于“引用类型”对象而言。
 
 ```java
-final AtomicLong a = new AtomicLong(3);
+--8<-- ".snippets/types/const-types/001-final-atomiclong.java:code"
 ```
 
 这里的实际含义是我们不能再 `new` 一个 `AtomicLong` 并让 `a` 指向这个新的 `AtomicLong` 实例，但是我们仍然可以改变 `a` 当前这个 `AtomicLong` 内部的值。
@@ -554,24 +292,7 @@ final AtomicLong a = new AtomicLong(3);
 `const` 关键字是修饰其左边的类型的，除非其左边没有类型了，此时 `const` 才修饰其右边紧挨着的的类型。例如 `const A*` 和 `A const*` 是等价的。
 
 ```cpp
-AtomicLong* const a = new AtomicLong(3);  // Equal to the Java example,
-                                          // The const is against the pointer.
-
-const AtomicLong* b = new AtomicLong(5);  // Disallow to modify the internal value of b,
-                                          // but allow to assign b to a new pointer.
-                                          // The const is against AtomicLong type.
-
-// Just for example
-class AtomicLong {
- public:
-  int64_t value() const;          // This is a read-only method, visiable for an
-                                  // AtomicLong const type.
-  void set_value(int64_t value);  // This is not a read-only method, invisible for an
-                                  // AtomicLong const type.
-
- private:
-  int64_t value_;
-};
+--8<-- ".snippets/types/const-types/002-const-pointer-and-methods.cc:code"
 ```
 
 ## 常量
@@ -581,15 +302,7 @@ C++ 中常见的定义常量的方法有以下几种（按照建议顺序排列�
 > 更多内容见 https://abseil.io/tips/140
 
 ```cpp
-constexpr int32_t kTwo = 2;
-const in32_t kTwo = 2;
-
-enum : int32_t /* or any other necessary integral type. */ {
-  kTwo = 2;
-};
-
-// Only take the following partten for last regret.
-#define YOUR_PROJECT_PREFIX_TWO 2
+--8<-- ".snippets/types/constants/001-define-constants.cc:code"
 ```
 
 /// admonition | 注意
@@ -602,52 +315,13 @@ enum : int32_t /* or any other necessary integral type. */ {
 1. 跨越编译单元（`.cc`，`.cpp`文件）的全局变量之间的初始化顺序是不确定的（Undefined Behavior），这导致的一个问题是如果你的另一个全局变量依赖于这个变量进行初始化的话，其结果是不确定的。（见 <https://isocpp.org/wiki/faq/ctors#static-init-order>）
 
 ```cpp
-// !!! DON'T DO THIS !!!
-constexpr std::string kHelloWorldMessage1 = "Hello World!";
-
-// Do it this way.
-constexpr char kHelloWorldMessage2[] = "Hello World!";
-
-// In case you really need std::string or some complex types.
-// constants.h
-const std::string& GetHelloWorldMessage3();
-// constants.cc
-const std::string& GetHelloWorldMessage3() {
-  static const std::string kHelloWorldMessage3 = "Hello World!";
-  return kHelloWorldMessage3;
-}
+--8<-- ".snippets/types/constants/002-string-constants.cc:code"
 ```
 
 C++17 之前不能在头文件中定义常量及常量的值，可以使用 `ABSL_INTERNAL_INLINE_CONSTEXPR` 这个宏来 hack 一下。
 
 ```cpp
-// Macro: ABSL_INTERNAL_INLINE_CONSTEXPR(type, name, init)
-//
-// Description:
-//   Expands to the equivalent of an inline constexpr instance of the specified
-//   `type` and `name`, initialized to the value `init`. If the compiler being
-//   used is detected as supporting actual inline variables as a language
-//   feature, then the macro expands to an actual inline variable definition.
-//
-// Requires:
-//   `type` is a type that is usable in an extern variable declaration.
-//
-// Requires: `name` is a valid identifier
-//
-// Requires:
-//   `init` is an expression that can be used in the following definition:
-//     constexpr type name = init;
-//
-// Usage:
-//
-//   // Equivalent to: `inline constexpr size_t variant_npos = -1;`
-//   ABSL_INTERNAL_INLINE_CONSTEXPR(size_t, variant_npos, -1);
-//
-// Differences in implementation:
-//   For a direct, language-level inline variable, decltype(name) will be the
-//   type that was specified along with const qualification, whereas for
-//   emulated inline variables, decltype(name) may be different (in practice
-//   it will likely be a reference type).
+--8<-- ".snippets/types/constants/003-absl-inline-constexpr-comment.cc:code"
 ```
 
 ## 类型转换
@@ -682,79 +356,7 @@ C 的类型系统比较混乱，C++ 为了兼容 C 也背了不少历史包袱�
 如果我们确实是想要将父类指针转成子类指针，我们还可以做得更好一点：
 
 ```cpp
-// Use implicit_cast as a safe version of static_cast or const_cast
-// for upcasting in the type hierarchy (i.e. casting a pointer to Foo
-// to a pointer to SuperclassOfFoo or casting a pointer to Foo to
-// a const pointer to Foo).
-// When you use implicit_cast, the compiler checks that the cast is safe.
-// Such explicit implicit_casts are necessary in surprisingly many
-// situations where C++ demands an exact type match instead of an
-// argument type convertible to a target type.
-//
-// The From type can be inferred, so the preferred syntax for using
-// implicit_cast is the same as for static_cast etc.:
-//
-//   implicit_cast<ToType>(expr)
-//
-// implicit_cast would have been part of the C++ standard library,
-// but the proposal was submitted too late.  It will probably make
-// its way into the language in the future.
-template<typename To, typename From>
-inline To implicit_cast(From const &f) {
-  return f;
-}
-
-// When you upcast (that is, cast a pointer from type Foo to type
-// SuperclassOfFoo), it's fine to use implicit_cast<>, since upcasts
-// always succeed.  When you downcast (that is, cast a pointer from
-// type Foo to type SubclassOfFoo), static_cast<> isn't safe, because
-// how do you know the pointer is really of type SubclassOfFoo?  It
-// could be a bare Foo, or of type DifferentSubclassOfFoo.  Thus,
-// when you downcast, you should use this macro.  In debug mode, we
-// use dynamic_cast<> to double-check the downcast is legal (we die
-// if it's not).  In normal mode, we do the efficient static_cast<>
-// instead.  Thus, it's important to test in debug mode to make sure
-// the cast is legal!
-//    This is the only place in the code we should use dynamic_cast<>.
-// In particular, you SHOULDN'T be using dynamic_cast<> in order to
-// do RTTI (eg code like this:
-//    if (dynamic_cast<Subclass1>(foo)) HandleASubclass1Object(foo);
-//    if (dynamic_cast<Subclass2>(foo)) HandleASubclass2Object(foo);
-// You should design the code some other way not to need this.
-
-template<typename To, typename From>     // use like this: down_cast<T*>(foo);
-inline To down_cast(From* f) {           // so we only accept pointers
-  // Ensures that To is a sub-type of From *.  This test is here only
-  // for compile-time type checking, and has no overhead in an
-  // optimized build at run-time, as it will be optimized away
-  // completely.
-  if (false) {
-    implicit_cast<From*, To>(0);
-  }
-
-#if !defined(NDEBUG) && YOUR_PROJECT_ENABLED_RTTI
-  assert(f == nullptr || dynamic_cast<To>(f) != nullptr);  // RTTI: debug mode only!
-#endif
-  return static_cast<To>(f);
-}
-
-template<typename To, typename From>    // use like this: down_cast<T&>(foo);
-inline To down_cast(From& f) {
-  typedef typename std::remove_reference<To>::type* ToAsPointer;
-  // Ensures that To is a sub-type of From *.  This test is here only
-  // for compile-time type checking, and has no overhead in an
-  // optimized build at run-time, as it will be optimized away
-  // completely.
-  if (false) {
-    implicit_cast<From*, ToAsPointer>(0);
-  }
-
-#if !defined(NDEBUG) && YOUR_PROJECT_ENABLED_RTTI
-  // RTTI: debug mode only!
-  assert(dynamic_cast<ToAsPointer>(&f) != nullptr);
-#endif
-  return *static_cast<ToAsPointer>(&f);
-}
+--8<-- ".snippets/types/conversions/001-implicit-down-cast.h:code"
 ```
 
 ### `bit_cast`
