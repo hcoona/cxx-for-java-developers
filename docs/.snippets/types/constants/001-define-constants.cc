@@ -10,6 +10,6 @@ enum : int32_t {  // or any other necessary integral type.
   kTwo3 = 2,
 };
 
-// Only take the following pattern as last resort.
+// Only take the following pattern as a last resort.
 #define YOUR_PROJECT_PREFIX_TWO 2
 // --8<-- [end:code]

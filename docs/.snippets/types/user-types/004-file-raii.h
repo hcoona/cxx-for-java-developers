@@ -8,7 +8,10 @@ class File {
   static constexpr int kInvalidFileDescriptor = -1;
 
   File() = default;
-  File(int fd) : fd_(fd) {}
+  explicit File(int fd) : fd_(fd) {}
+
+  // Disable Copy
+  // ...
 
   // Close OS managed resource during destruction.
   // Example:
