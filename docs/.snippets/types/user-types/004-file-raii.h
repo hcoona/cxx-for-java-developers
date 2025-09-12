@@ -18,8 +18,8 @@ class File {
   //     // Read file contents...
   //   }  // Execute ~File() automatically to close the OS managed resource.
   ~File() {
-    if (fd != kInvalidFileDescriptor) {
-      PCHECK(::close(fd) == -1) << "Failed to close file.";
+    if (fd_ != kInvalidFileDescriptor) {
+      PCHECK(::close(fd_) == 0) << "Failed to close file.";
     }
   }
 

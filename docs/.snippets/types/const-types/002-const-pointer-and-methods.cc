@@ -14,7 +14,7 @@ const AtomicLong* b =
 // Just for example
 class AtomicLong {
  public:
-  int64_t value() const;          // This is a read-only method, visiable for an
+  int64_t value() const;          // This is a read-only method, visible for an
                                   // AtomicLong const type.
   void set_value(int64_t value);  // This is not a read-only method, invisible
                                   // for an AtomicLong const type.

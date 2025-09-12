@@ -4,7 +4,7 @@
 
 // --8<-- [start:code]
 constexpr int32_t kTwo = 2;
-const int32_t kTwo2 = 2;  // NOTE: original text had a typo 'in32_t'.
+const int32_t kTwo2 = 2;
 
 enum : int32_t {  // or any other necessary integral type.
   kTwo3 = 2,

@@ -46,7 +46,7 @@ class ReferenceType {
   ReferenceType& operator=(ReferenceType&& other) {
     id_ = other.id_;               // Cannot move int, it's a primitive type.
     other.id_ = 0;                 // Copy then clear the field.
-    name_ = std::move(other.id_);  // Move std::string
+    name_ = std::move(other.name_);  // Move std::string
   }
 };
 // --8<-- [end:code]
