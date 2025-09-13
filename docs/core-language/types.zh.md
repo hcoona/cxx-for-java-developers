@@ -523,47 +523,19 @@ C++ 中的 `std::string` 只能当成 bytes array 来用，基本上不考虑 en
 Java 的枚举类型比较复杂，里面还可以包含方法和成员变量。C/C++ 中的枚举比较纯粹，就是一些特定整数值的集合。C++ 兼容 C-style 声明的枚举类型，但是我们应该尽量避免使用这种形式声明枚举类型，因为这样声明的枚举常量会直接泄漏到当前声明所在的名字空间内，而且也不进行类型检查。我们应该尽量使用新的枚举声明方法，即 scoped-enum。
 
 ```cpp
-// Deprecated style.
-enum Fruit {
-  FRUIT_UNSPECIFIED = 0,
-  FRUIT_APPLE = 1,
-};
-
-// |FRUIT_UNSPECIFIED| is visible.
-
-// Suggested style. The only different is |class| keyword.
-enum class Fruit {
-  kUnspecified = 0,
-  kApple = 1,
-};
-
-// |kUnspecified| is invisible. You need to reference it as |Fruit::kUnspecified|.
+--8<-- ".snippets/types/enum/001-basic-enum.cc:code"
 ```
 
 更进一步的，我们可以指定 `enum` 的 underlying type，即底层实现使用什么整数类型来存储之：
 
 ```cpp
-enum Fruit : char {
-};
-
-enum Animal : int64_t {
-};
+--8<-- ".snippets/types/enum/002-underlying-type.cc:code"
 ```
 
 由于一些复杂的原因，老的枚举声明有的时候也被用于声明常量，我们知道有这种用法就行了，正常不要这么用。
 
 ```cpp
-class HeaderOnlyClass {
-  enum {
-    kDefaultAnswer = 42,
-  };
-
- public:
-  // ...
-
- private:
-  int32_t answer_{kDefaultAnswer};
-};
+--8<-- ".snippets/types/enum/003-anonymous-enum-constant.cc:code"
 ```
 
 ## `std::variant` 和 tagged union
