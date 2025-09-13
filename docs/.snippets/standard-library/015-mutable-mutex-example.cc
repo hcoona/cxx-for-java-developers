@@ -10,7 +10,7 @@ class MyIntCounter {
  private:
   mutable absl::Mutex mutex_;
   // See static analysing thread-safety errors for further details about
-  // ABSL_GUARDED_BY. Intrduced in the following subsection.
+  // ABSL_GUARDED_BY. Introduced in the following subsection.
   int32_t value_ ABSL_GUARDED_BY(mutex_);
 };
 

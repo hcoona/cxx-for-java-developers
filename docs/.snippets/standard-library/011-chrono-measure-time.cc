@@ -10,5 +10,5 @@ auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed = end - start;
 LOG(INFO) << "elapsed time: "
           << std::chrono::duration_cast<std::chrono::seconds>(elapsed).count()
-          << "s\n";
+          << "s";
 // --8<-- [end:code]

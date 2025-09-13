@@ -6,6 +6,6 @@
 int OpenReadFile1(absl::string_view filename) {
   // Must copy it to append \0 at the end.
   std::string copied_filename(filename);
-  return ::open(copied_filename.c_str());
+  return ::open(copied_filename.c_str(), O_RDONLY);
 }
 // --8<-- [end:code]
