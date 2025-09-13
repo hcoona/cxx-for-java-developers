@@ -543,42 +543,19 @@ Java 的枚举类型比较复杂，里面还可以包含方法和成员变量。
 Java 中没有 Union 类型这个概念。C/C++ 允许程序员以更紧凑的内存结构来表示数据。Union 的主要使用场景是使用同一个类型存储 A 或者 B 类型的数据，两者不会共存。也可以扩展到更多类型。
 
 ```cpp
-union UnionStorage {
-  int32_t n;     // occupies 4 bytes
-  uint16_t s[2]; // occupies 4 bytes
-  uint8_t c;     // occupies 1 byte
-};               // the whole union occupies 4 bytes
+--8<-- ".snippets/types/union/001-union-basic.cc:code"
 ```
 
 我们怎么知道实际上 `union` 存储的是什么类型呢，简单的一个方法就是给它再加上一个枚举类型。
 
 ```cpp
-enum class UnionStorageDataType {
-  kUnspecified = 0,
-  kInt32 = 1,
-  kUint16Array = 2,
-  kUint8 = 3,
-};
-
-struct UnionStorage {
-  UnionStorageDataType data_type;
-  union {
-    int32_t n;
-    uint16_t s[2];
-    uint8_t c;
-  } data;
-};
+--8<-- ".snippets/types/union/002-union-tagged.cc:code"
 ```
 
 但是这种老式的 `union` 声明有个缺点，就是很难处理 non-trivial 数据类型（比如说 `std::string`）。通常我们使用 `std::variant` 来搞定这个事情：
 
 ```cpp
-using UnionStorage = absl::variant<
-  absl::monostate /* for empty case */, uint64_t,
-  std::string, double, std::vector<MyClass>>;
-
-UnionStorage s{3.14};
-double* d = absl::get_if<double>(&s);
+--8<-- ".snippets/types/union/003-variant-example.cc:code"
 ```
 
 ## `std::optional`
@@ -590,14 +567,7 @@ C/C++/Java 长期使用 null pointer 来表示 optional value，但是这在工�
 所以在 C++ 中，我们引入了 reference 来代替 pointer。其中一个重要的原则就是尽量使用 reference 而非 pointer。尽管 Google C++ Sytle Guide 要求 mutable parameter 使用 pointer 传入，但是我们也基本上假设传入的 pointer 不为空。所以我们该怎么表示一个可能为空的值呢？我个人建议使用 `std::optional`（`absl::optional`），这样可以以一种足够醒目的姿势提示所有人，这里可能为空。
 
 ```cpp
-absl::optional<Pie> MakePie() {
-  bool failed = /* ... */;
-  if (failed) {
-    return absl::nullopt;
-  }
-
-  return Pie();
-}
+--8<-- ".snippets/types/optional/001-optional-basic.cc:code"
 ```
 
 ## std::function
@@ -605,19 +575,11 @@ absl::optional<Pie> MakePie() {
 类似于 Java 的 `java.util.function` 包，但是用起来更方便一些，可以接收任意多参数，也不区分 Primitive Type。
 
 ```java
-Consumer<String> c = s-> System.out.println(s);
-Predicate<String> p = s -> s.isEmpty();
-// Function, BiFunction, ...
+--8<-- ".snippets/types/function/000-java-functional-example.java:code"
 ```
 
 ```cpp
-std::function<void(absl::string_view)> c = [](absl::string_view s) { LOG(INFO) << s; };
-std::function<bool(absl::string_view)> p = [](absl::string_view s) { return s.empty(); };
-
-std::function<Status(int64_t /* id */, absl::string_view /* name */, Gender)> f =
-    [](int64_t id, absl::string_view name, Gender gender) {
-      // ...
-    };
+--8<-- ".snippets/types/function/001-std-function-basic.cc:code"
 ```
 
 lambda 表达式的类型不是 `std::function`，但是 `std::function` 可以绑定一个 lambda 表达式。拷贝一个 `std::function` 的时候会把捕获的内容也拷贝一份。
@@ -629,10 +591,5 @@ lambda 表达式的类型不是 `std::function`，但是 `std::function` 可以�
 `std::function` 不支持绑定 move-only 的类型，但是 lambda 可以捕获 move-only 的类型。目前标准库还没有提供 move-only-function，需要自己 workaround 一下：
 
 ```cpp
-MoveOnlyInt v(1);
-auto lambda = [v = std::move(v)]() { LOG(INFO) << v.value(); };
-std::function<void()> f =
-    [lambda = std::make_shared<decltype(lambda)>(std::move(lambda))]() {
-      lambda();
-   };
+--8<-- ".snippets/types/function/002-std-function-move-only.cc:code"
 ```
