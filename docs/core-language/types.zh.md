@@ -364,66 +364,7 @@ C 的类型系统比较混乱，C++ 为了兼容 C 也背了不少历史包袱�
 除了上面说到的场景，有些时候我们还需要进行一些比较底层（bit-level）的转换。比如说直接将一个 `uint64_t` 转换成一个 double，这个转换不进行任何实际意义上的操作，只是重新理解这 64 bit 二进制内容。这个事情有点类似于 `reinterpret_cast`，但是不符合其定义的转换范围（指针之间，或者指针和整数之间）。在 C++20 中新增了 `bit_cast` 用于解决这个问题。但是在此之前，我们还只能自己使用 `memcpy` 解决一下：
 
 ```cpp
-// bit_cast<Dest,Source> is a template function that implements the equivalent
-// of "*reinterpret_cast<Dest*>(&source)".  We need this in very low-level
-// functions like the protobuf library and fast math support.
-//
-//   float f = 3.14159265358979;
-//   int i = bit_cast<int32_t>(f);
-//   // i = 0x40490fdb
-//
-// The classical address-casting method is:
-//
-//   // WRONG
-//   float f = 3.14159265358979;            // WRONG
-//   int i = *reinterpret_cast<int*>(&f);   // WRONG
-//
-// The address-casting method actually produces undefined behavior according to
-// the ISO C++98 specification, section 3.10 ("basic.lval"), paragraph 15.
-// (This did not substantially change in C++11.)  Roughly, this section says: if
-// an object in memory has one type, and a program accesses it with a different
-// type, then the result is undefined behavior for most values of "different
-// type".
-//
-// This is true for any cast syntax, either *(int*)&f or
-// *reinterpret_cast<int*>(&f).  And it is particularly true for conversions
-// between integral lvalues and floating-point lvalues.
-//
-// The purpose of this paragraph is to allow optimizing compilers to assume that
-// expressions with different types refer to different memory.  Compilers are
-// known to take advantage of this.  So a non-conforming program quietly
-// produces wildly incorrect output.
-//
-// The problem is not the use of reinterpret_cast.  The problem is type punning:
-// holding an object in memory of one type and reading its bits back using a
-// different type.
-//
-// The C++ standard is more subtle and complex than this, but that is the basic
-// idea.
-//
-// Anyways ...
-//
-// bit_cast<> calls memcpy() which is blessed by the standard, especially by the
-// example in section 3.9 .  Also, of course, bit_cast<> wraps up the nasty
-// logic in one place.
-//
-// Fortunately memcpy() is very fast.  In optimized mode, compilers replace
-// calls to memcpy() with inline object code when the size argument is a
-// compile-time constant.  On a 32-bit system, memcpy(d,s,4) compiles to one
-// load and one store, and memcpy(d,s,8) compiles to two loads and two stores.
-template <class Dest, class Source>
-inline Dest bit_cast(const Source& source) {
-  static_assert(sizeof(Dest) == sizeof(Source),
-                "bit_cast requires source and destination to be the same size");
-  static_assert(base::is_trivially_copyable<Dest>::value,
-                "bit_cast requires the destination type to be copyable");
-  static_assert(base::is_trivially_copyable<Source>::value,
-                "bit_cast requires the source type to be copyable");
-
-  Dest dest;
-  memcpy(&dest, &source, sizeof(dest));
-  return dest;
-}
+--8<-- ".snippets/types/conversions/002-bit-cast.h:code"
 ```
 
 ### 智能指针类型转换
@@ -433,12 +374,7 @@ inline Dest bit_cast(const Source& source) {
 所以我们如果写自己的方法，应当尽可能地返回 `std::unique_ptr`。
 
 ```cpp
-std::unique_ptr<Animal> MakeAnimal();
-
-std::shared_ptr<Animal> animal = MakeAnimal();
-
-std::unique_ptr<Animal> uniq_animal = MakeAnimal();
-std::shared_ptr<Animal> shared_animal = std::move(uniq_animal);
+--8<-- ".snippets/types/conversions/003-unique-to-shared.cc:code"
 ```
 
 #### `*_pointer_cast`
@@ -448,8 +384,7 @@ std::shared_ptr<Animal> shared_animal = std::move(uniq_animal);
 `std::static_pointer_cast`, `std::dynamic_pointer_cast`, `std::const_pointer_cast`, `std::reinterpret_pointer_cast` 是 4 个基本类型转换操作符的 shared_ptr 版本。类似的，我们也可以实现 `down_pointer_cast`。
 
 ```cpp
-std::shared_ptr<Animal> animal_dog = MakeDog();
-std::shared_ptr<Dog> dog = std::static_pointer_cast<Dog>(animal_dog);
+--8<-- ".snippets/types/conversions/004-pointer-cast.cc:code"
 ```
 
 ### 类型收窄
@@ -457,9 +392,7 @@ std::shared_ptr<Dog> dog = std::static_pointer_cast<Dog>(animal_dog);
 C++ 为了兼容 C 语言，背了不少历史包袱，其中之一就是隐式转换。例如从 `double`（通常需要 8 字节表示）到 `int`（通常需要 4 字节表示）的转换是“自动”的，只会产生一个编译器警告：
 
 ```cpp
-double d = 7.9;
-int i = d;    // bad: narrowing: i becomes 7
-i = (int) d;  // bad: we're going to claim this is still not explicit enough
+--8<-- ".snippets/types/conversions/005-narrowing-basic.cc:code"
 ```
 
 这就是为什么我们需要关注且尽可能消除编译器警告。
@@ -467,38 +400,13 @@ i = (int) d;  // bad: we're going to claim this is still not explicit enough
 首先介绍一下怎么防止出现自动类型转换，原则很简单，就是在调用构造函数的时候总是使用大括号而非小括号：
 
 ```cpp
-class IntType {
- public:
-  explicit IntType(int v);
-  // ...
-};
-
-double d = 7.9;
-IntType i1(d);  // bad: narrowing
-IntType i2{d};  // Won't compile!
-int i = d;      // bad: narrowing
-int i{d};       // Won't compile!
+--8<-- ".snippets/types/conversions/006-brace-init-narrowing.cc:code"
 ```
 
 然后就是需要进行类型转换的时候怎么办：
 
 ```cpp
-double d = 7.9;
-
-// If you included GSL in your project
-// https://github.com/microsoft/GSL
-int i = gsl::narrow_cast<int>(d);
-
-// Make your version of narrow_cast
-// narrow_cast(): a searchable way to do narrowing casts of values
-template <class T, class U>
-constexpr T narrow_cast(U&& u) noexcept
-{
-    return static_cast<T>(std::forward<U>(u));
-}
-
-// static_cast if neither include GSL nor make your version of narrow_cast
-int i = static_cast<int>(d);
+--8<-- ".snippets/types/conversions/007-narrow-cast-helpers.cc:code"
 ```
 
 ## 泛型（C++ 模板）
