@@ -5,7 +5,7 @@
 // --8<-- [start:code]
 class Point {
  public:
-  bool operator<(Point&);  // Declare a member operator overload.
+  bool operator<(const Point&) const;  // Declare a member operator overload.
 
   // Declare addition operators.
   friend Point operator+(Point&, int);

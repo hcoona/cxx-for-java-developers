@@ -5,7 +5,7 @@
 // --8<-- [start:code]
 UniqueFileDescriptor unique_fd;
 {
-  UniqueFileDescriptor fd(::open(filename.c_str(), "r"));
+  UniqueFileDescriptor fd(::open(filename.c_str(), O_RDONLY));
   if (fd.fd() == UniqueFileDescriptor::kInvalidFileDescriptor) {
     return absl::UnknownError("Failed to open file.");
   }

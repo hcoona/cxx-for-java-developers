@@ -15,6 +15,10 @@ class UniqueFileDescriptor {
     }
   }
 
+  // omitted: copy constructor and copy assignment operator should be deleted.
+  // omitted: move constructor and move assignment operator should be defined.
+  // omitted: other utility methods.
+
  private:
   int fd_{UniqueFileDescriptor::kInvalidFileDescriptor};
 };
