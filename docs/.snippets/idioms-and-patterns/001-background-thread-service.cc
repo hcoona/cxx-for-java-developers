@@ -16,8 +16,9 @@ class MyService {
 };
 
 Status MyService::Start() {
-  background_thread_ =
-      std::make_unique<std::thread>(&BackgroundThreadEntryPoint, this);
+  background_thread_ = std::make_unique<std::thread>(
+      &MyService::BackgroundThreadEntryPoint, this);
+  return Status::OK();
 }
 
 void MyService::Stop() {
@@ -30,7 +31,8 @@ void MyService::Stop() {
 
 void MyService::BackgroundThreadEntryPoint() {
   while (!stopping_notification_.WaitWithTimeout(
-      absl::Millisecond(kLoopInterval))) {
+      absl::Milliseconds(kLoopInterval))) {
     // ...
   }
 }
+// --8<-- [end:code]

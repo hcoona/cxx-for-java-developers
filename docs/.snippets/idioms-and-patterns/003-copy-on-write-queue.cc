@@ -5,15 +5,17 @@
 // --8<-- [start:code]
 class MyQueue {
  public:
-  void PushQueue(int v);
-  void PrintQueue();
+  // Omitted: constructor, destructor, other methods.
+
+  void Push(int v);
+  void Print();
 
  private:
   std::shared_ptr<std::vector<int>> queue_ ABSL_GUARDED_BY(mutex_);
   absl::Mutex mutex_;
 };
 
-void MyQueue::PushQueue(int v) {
+void MyQueue::Push(int v) {
   absl::MutexLock lock(&mutex_);
   if (!queue_.unique()) {
     // Copy if other people reading the queue.
@@ -21,18 +23,18 @@ void MyQueue::PushQueue(int v) {
   }
   // Now we ensure no other people accessing the queue.
   DCHECK(queue_.unique());
-  queue_.emplace_back(v);
+  queue_->emplace_back(v);
 }
 
-void MyQueue::PrintQueue() {
+void MyQueue::Print() {
   std::shared_ptr<std::vector<int>> the_queue;
   {
     absl::MutexLock lock(&mutex_);
     the_queue = queue_;
-    DCHECK(!queue_.unique());
   }
 
   for (int v : *the_queue) {
     absl::PrintF("%d\n", v);
   }
 }
+// --8<-- [end:code]

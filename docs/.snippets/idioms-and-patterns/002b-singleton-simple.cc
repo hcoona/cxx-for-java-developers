@@ -7,3 +7,4 @@ Factory& Factory::GetInstance() {
   static Factory instance;
   return instance;
 }
+// --8<-- [end:code]
