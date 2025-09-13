@@ -13,5 +13,6 @@ int main() {
   int b;
   std::cin >> a >> b;
   std::cout << example::sum(a, b) << std::endl;
+  return 0;
 }
 // --8<-- [end:code]

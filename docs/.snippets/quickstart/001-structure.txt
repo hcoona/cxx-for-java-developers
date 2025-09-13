@@ -10,3 +10,4 @@ SPDX-License-Identifier: Apache-2.0
     ├── example_lib.h
     ├── example_lib.cc
     └── main.cc
+// --8<-- [end:code]

@@ -4,3 +4,4 @@
 
 # --8<-- [start:code]
 bazel build //example:example
+# --8<-- [end:code]
