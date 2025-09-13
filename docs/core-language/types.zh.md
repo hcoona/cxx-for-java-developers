@@ -418,36 +418,21 @@ C++ 为了兼容 C 语言，背了不少历史包袱，其中之一就是隐式�
 ### 泛型方法
 
 ```java
-public <T> List<T> fromArrayToList(T[] a) {
-    return Arrays.stream(a).collect(Collectors.toList());
-}
+--8<-- ".snippets/types/generic/001-generic-method.java:code"
 ```
 
 ```cpp
-template <typename T>
-std::vector<T> fromArrayToList(const T* arr, int64_t size) {
-  return std::vector<T>(arr, arr + size);
-}
+--8<-- ".snippets/types/generic/002-generic-method.cc:code"
 ```
 
 ### 泛型类
 
 ```java
-public interface List<E> {
-    void add(E x);
-    Iterator<E> iterator();
-}
+--8<-- ".snippets/types/generic/003-generic-class.java:code"
 ```
 
 ```cpp
-template <typename T>
-class List {
- public:
-  virtual ~List() = default;
-
-  virtual void Add(T element) = 0;
-  virtual Iterator<T> iterator() const = 0;
-};
+--8<-- ".snippets/types/generic/004-generic-class.cc:code"
 ```
 
 ### C++ 中的语法限制
@@ -457,24 +442,7 @@ class List {
 头文件详细概念会在后面介绍。简而言之，就是说原来写在 `.cc` 或者 `.cpp` 文件里的内容现在都得写在 `.h` 里面。如果还是想要分开写 2 个文件的话，作为一个 workaround，也可以把原来写在 `.cc` 文件中的内容写在一个 `.inc` 文件中，然后在 `.h` 文件中 `#include` 这个 `.inc` 文件（实质上还是都写在了 `.h` 文件中）。
 
 ```cpp
-// vector.h
-template <typename T>
-class FixedArray {
- public:
-  void resize(int32_t new_size);
-
- private:
-  std::unique_ptr<T[]> data_;
-  int32_t size_;
-};
-
-#include vector.inc
-
-// vector.inc
-template <typename T>
-void FixedArray::resize(int32_t new_size) {
-  // ...
-}
+--8<-- ".snippets/types/generic/005-header-body-layout.cc:code"
 ```
 
 #### 类型约束的方法比较复杂
@@ -493,37 +461,11 @@ public <T extends Number> List<T> fromArrayToList(T[] a) {
 ```
 
 ```cpp
-template <typename T>
-std::vector<T> fromArrayToList(const T* arr, int64_t size) {
-  static_assert(std::is_integral<T>::value, "|arr| must be an integral array.");
-  return std::vector<T>(arr, arr + size);
-}
+--8<-- ".snippets/types/generic/006-static-assert.cc:code"
 ```
 
 ```cpp
-// If the |cond| satisfied, the |std::enable_if<cond>::type| is a |void|, else invalid
-// to evaluate it. So |typename std::enable_if<conf>::type*| is either |void*| or
-// invalid.
-//
-// |template <void* ignored = nullptr>| is another usage of C++ template. We won't
-// introduce it in this article. Just use it as an idiom here.
-template <typename T,
-          typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-std::vector<T> fromArrayToList(const T* arr, int64_t size) {
-  return std::vector<T>(arr, arr + size);
-}
-
-// Another useful idiom is |absl::void_t<decltype(...your complex condition...)>|
-//
-// template <typename Container, typename Element, typename = void>
-// struct HasFindWithNpos : std::false_type {};
-//
-// template <typename Container, typename Element>
-// struct HasFindWithNpos<
-//     Container, Element,
-//     absl::void_t<decltype(std::declval<const Container&>().find(
-//                               std::declval<const Element&>()) !=
-//                           Container::npos)>> : std::true_type {};
+--8<-- ".snippets/types/generic/007-enable-if.cc:code"
 ```
 
 ### 协变和逆变
