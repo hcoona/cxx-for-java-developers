@@ -204,11 +204,6 @@ Java 中自定义类型有一个比较大的缺憾，即无法定义“值类型
 详细解释见 <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c21-if-you-define-or-delete-any-copy-move-or-destructor-function-define-or-delete-them-all>
 ///
 
-/// admonition | TODO
-    type: todo
-未转录完
-///
-
 ### 在堆上创建对象
 
 回忆 Java，我们几乎所有的值类型都是在栈上创建的，所有的引用类型都是在堆上创建的：
@@ -456,7 +451,7 @@ C++ 由于目前（2021-05-14）还没有普及 [Concept 机制](https://en.cppr
 
 ```java
 public <T extends Number> List<T> fromArrayToList(T[] a) {
-    ...
+    // ...
 }
 ```
 
