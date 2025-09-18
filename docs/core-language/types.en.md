@@ -8,7 +8,7 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
 
 ## Fundamental Types
 
-(Targeting a common environment of x86_64 + Linux + GCC) Mapping between common Java and C++ fundamental types:
+Target environment: x86_64 + Linux + GCC. Mapping between common Java and C++ fundamental types:
 
 | Java Type | New C++ Type                                      | Old C++ Type          | Notes |
 | :-------- | :------------------------------------------------ | :-------------------- | :---- |
@@ -23,7 +23,7 @@ SPDX-License-Identifier: CC-BY-NC-ND-4.0
 | `double`  |                                                    | `double`              |       |
 
 /// admonition | Note
-Lengths of old types like `int` / `long` depend on CPU / OS / compiler; do not assume fixed length. See <https://en.cppreference.com/w/cpp/language/types> for common correspondences and detailed introduction of fundamental types in C++.
+Lengths of legacy types like `int` / `long` depend on CPU / OS / compiler; do not assume a fixed size. See <https://en.cppreference.com/w/cpp/language/types> for common correspondences and detailed descriptions.
 ///
 
 Other fundamental types common in C++ but not present in Java:
@@ -33,7 +33,7 @@ Other fundamental types common in C++ but not present in Java:
 - Unsigned versions of all integers: `unsigned int`, `uint64_t`, etc.
 
 /// admonition | Note
-If your code does not conform to the C++ standard, it may not be portable — for example, it might not compile on an ARM machine or might not run as expected. Therefore, for variable-length fundamental types, do not assume their length is some specific value.
+If code does not conform to the C++ standard it may not be portable—e.g. it might fail to compile on ARM or behave unexpectedly. For variable-length fundamental types, never assume a specific size.
 ///
 
 Unsigned types are called out separately to emphasize importance. Simply remember these principles:
@@ -46,14 +46,14 @@ Unsigned types are called out separately to emphasize importance. Simply remembe
     1. If you cannot ensure the signed integer is non-negative, first check whether it is negative; if it is negative it must be less than the unsigned integer, otherwise fall back to the previous case
 
 /// admonition | Note
-In principle do not use raw C++ arrays, because raw arrays decay to raw pointers when passed to functions and you cannot obtain the array length. And raw pointers are very unsafe.
+Avoid raw C++ arrays: when passed to a function they decay to raw pointers and length information is lost; raw pointers are unsafe.
 
-Use `std::span<int>` (or `absl::Span`), `const std::array<int, kSize>&` (not common, because it bakes the array length into the type and further into the function signature, which is ugly) to pass arrays. Or simply use `std::vector` pretending it is an array (if you are using the Abseil library, perhaps `absl::FixedArray` is a better choice).
+Prefer `std::span<int>` (or `absl::Span`), or `const std::array<int, kSize>&` (less common since it encodes the size into the type and propagates into signatures). Or just use `std::vector` as a dynamic array (if using Abseil, `absl::FixedArray` may be better).
 ///
 
 ### C++ Value Category Classification (Optional Reading)
 
-This refers to frequently heard concepts like lvalue, rvalue, xvalue, etc. Personally, I think for Java developers transitioning to C++, under normal circumstances you can use C++ for daily development without learning these. But if you need to write lower-level libraries you need to master this knowledge. Or if you are curious, you can read about it. Not expanded here; see <https://en.cppreference.com/w/cpp/language/value_category> for details.
+These are the often-heard categories: lvalue, rvalue, xvalue, etc. For most Java-to-C++ application development you can get by without them; for lower-level library work you should learn them. See <https://en.cppreference.com/w/cpp/language/value_category>.
 
 ### Extended Discussion on Using Signed Integer to Represent Length
 
@@ -65,7 +65,7 @@ A common error example of using unsigned integers:
 
 /// admonition | TODO
     type: todo
-Some discussions at <https://stackoverflow.com/questions/51677855/is-using-an-unsigned-rather-than-signed-int-more-likely-to-cause-bugs-why>. I will look for some more authoritative materials in the future.
+Some discussion: <https://stackoverflow.com/questions/51677855/is-using-an-unsigned-rather-than-signed-int-more-likely-to-cause-bugs-why>. More authoritative sources may be added later.
 ///
 
 [Google Style Guide](https://google.github.io/styleguide/cppguide.html#Integer_Types) mentions:
@@ -76,7 +76,7 @@ The C++20 standard added the `ssize()` function to return container size express
 
 ## User-Defined Types
 
-In principle, in C++, user-defined types enjoy the same capabilities as language built-in fundamental types. Java differs: built-in numeric types are always passed by value and allocated on the stack; user-defined types are always passed by reference and allocated on the heap.
+In principle user-defined types in C++ have the same capabilities as built-in fundamental types. Java differs: built-in numeric types are always value + stack; user-defined types are reference + heap.
 
 ### `class` vs `struct`
 
@@ -86,11 +86,11 @@ C++ supports using `class` and `struct` to define user-defined types. In princip
 There is no package visibility level in C++.
 ///
 
-The concept of `struct` originates from the C language, but in C++ it is just another spelling of `class`; semantically other than default visibility there is no difference. A “simple” C-style `struct` has a notable advantage over current C++ `class`es: we can directly operate on a block of memory with `memcpy` and similar operations (otherwise we must consider copy constructors, etc.). Although such operations are very dangerous, sometimes they bring significant performance improvements. We call “simple” C-style `struct` types [POD types (Plain old data-type, deprecated since C++20)](https://en.cppreference.com/w/cpp/named_req/PODType) or [Standard Layout Type](https://en.cppreference.com/w/cpp/named_req/StandardLayoutType). The concrete concepts are not expanded here (see <https://docs.microsoft.com/en-us/cpp/cpp/trivial-standard-layout-and-pod-types?view=msvc-160>).
+`struct` comes from C; in C++ it is just an alternative spelling for `class` differing only in default visibility. A “simple” C-style struct allows raw memory operations like `memcpy` (otherwise copy constructors etc. matter). Dangerous, but sometimes high-performance. Such simple types are called [POD (deprecated since C++20)](https://en.cppreference.com/w/cpp/named_req/PODType) or [Standard Layout](https://en.cppreference.com/w/cpp/named_req/StandardLayoutType). Details omitted (see Microsoft docs link).
 
 ### Constructors and Destructors (Updated 2021-07-18)
 
-All variables need to be initialized before use, unless you can guarantee assigning them before use (which effectively also initializes them); otherwise you are using the value of a variable with indeterminate behavior. In such a case, the contents of the variable are not guaranteed to be 0 (in machine code semantics); it could be anything. In both Java and C++, constructors ensure all member variables of a class are properly initialized.
+All variables must be initialized before use unless you guarantee an assignment precedes every read (which is still initialization). Otherwise the value is indeterminate; memory is not guaranteed to be zeroed. Constructors in both Java and C++ ensure members are initialized.
 
 Unlike Java, in C++ there are three ways to initialize member variables (ordered by recommended usage, and can be approximated as their execution order):
 
@@ -98,29 +98,29 @@ Unlike Java, in C++ there are three ways to initialize member variables (ordered
 1. Constructor initialization list
 1. Constructor body
 
-Where possible, we should initialize member variables at the declaration site. This avoids forgetting some members when adding constructors, and the value is close to the declaration making it easier to find. Scenarios of initializing a member variable to some constant / literal usually use this method, for example:
+Prefer initializing members at the declaration site. This avoids omissions when adding constructors and keeps default values near declarations. Initialize with constants / literals this way, e.g.:
 
 ```cpp
 --8<-- ".snippets/types/user-types/001-person-default-init.h:code"
 ```
 
-If you need to pass in some values via constructor parameters for initialization, then you can only choose the other two ways. In that case, we should initialize as much as possible in the constructor's initialization list. This has better performance. Only as a last resort use the constructor body.
+If constructor parameters are required, use the initialization list as much as possible (better performance); fall back to the body only when necessary.
 
 ```cpp
 --8<-- ".snippets/types/user-types/002-person-ctor-initlist.h:code"
 ```
 
 /// admonition | Note
-Pay special attention that the order of the initialization list needs to be consistent with the order of member variable declarations.
+Pay special attention: keep the initialization list order aligned with member declaration order.
 ///
 
-In fact, regardless of how you write the initialization list, actual initialization executes in the order of member variable declarations. So once these two orders differ, it's easy to cause misunderstanding. In some special cases it's easy to go wrong, for example:
+Initialization actually follows the order of member declarations regardless of list order. A mismatch invites confusion and subtle bugs. Example:
 
 ```cpp
 --8<-- ".snippets/types/user-types/003-person-wrong-order.h:code"
 ```
 
-The destructor is analogous to Java's [`AutoClosable.close()`](https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html#close--) in C++. You can think every object instance in C++ is contained within a Java [try-with-resources](https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html) block: as soon as it goes out of scope, the destructor is called immediately.
+The destructor plays a role analogous to Java's [`AutoClosable.close()`](https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html#close--) but is implicit: leaving scope invokes it (RAII / try-with-resources like behavior).
 
 ```cpp
 --8<-- ".snippets/types/user-types/004-file-raii.h:code"
@@ -130,44 +130,44 @@ The destructor is analogous to Java's [`AutoClosable.close()`](https://docs.orac
 In C++, constructors can throw exceptions and be caught, but if a destructor throws an exception it directly causes the program to exit. If a constructor might throw, then in the destructor you must be aware some member variables may not have been properly initialized before throwing.
 ///
 
-Usually in practice, it is recommended not to use exception handling (reasons see [Google C++ Style Guide discussion](https://google.github.io/styleguide/cppguide.html#Exceptions)). Without using exceptions, we typically use a `Status` class return value to simulate the process of throwing and catching exceptions. In such cases, it's recommended to use this pattern to handle and return errors that would otherwise be handled in a constructor:
+In practice many projects avoid exceptions (see [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html#Exceptions)). Without exceptions a `Status` return type simulates throw/catch. Pattern for constructor-like failure handling:
 
 ```cpp
 --8<-- ".snippets/types/user-types/005-http-client-factory.h:code"
 ```
 
-Notice the constructor uses the `explicit` keyword because it has only one parameter. In such cases remember to use `explicit`, otherwise implicit conversion from that parameter type to this type will occur. Implicit conversions are always something we need to avoid because they break our type system.
+The constructor uses `explicit` because it has a single parameter. Without it an unintended implicit conversion would exist. Avoid such conversions to preserve type safety.
 
 ```cpp
 --8<-- ".snippets/types/user-types/006-implicit-explicit.h:code"
 ```
 
 /// admonition | Note
-It is recommended that constructors do as little as possible, only necessary initialization work. Other work, such as starting background threads, can be moved outside using the above pattern.
+Make constructors minimal: only essential initialization. Defer side effects (e.g. background threads) via separate start methods.
 ///
 
-Taking a background thread as an example, starting it in a constructor often causes problems. No code here (too cumbersome); roughly how it fails:
+Example (background thread): starting one inside a constructor is problematic. Outline:
 
 1. The parent class constructor starts a background thread.
 1. The background thread calls a virtual function; at this time the child class constructor has not yet finished executing. Thus the overridden virtual function in the child class may access member variables not yet initialized.
 
 /// admonition | Note
-Similarly, do not wait for a background thread to finish in the destructor. The child class may already be destructed; calling virtual methods then is the same issue.
+Similarly do not join/wait in the destructor; derived parts may already be gone.
 ///
 
 /// admonition | Note
-Do not call virtual functions in constructors and destructors.
+Avoid calling virtual functions (directly or indirectly) in constructors/destructors.
 ///
 
 Suppose there is a base class `Base` and a derived class `Child`. Constructing a `Child` object first calls `Base`'s constructor to initialize `Base`'s members, then calls `Child`'s constructor to initialize `Child`'s members; destructing a `Child` object first destructs `Child`'s members, then `Base`'s members. In this regard C++ and Java are the same.
 
-Consider a scenario where the `Base` constructor calls a virtual method overridden by `Child`. If that function uses `Child`'s members, problems may occur because `Child`'s members are not yet properly initialized. Similarly, calling virtual methods in the destructor has similar issues. Therefore avoid calling virtual methods in constructors/destructors.
+If a `Base` constructor calls a virtual overridden in `Child`, the `Child` portion is uninitialized—undefined behavior risk. Same for destructors. Hence: avoid.
 
-Sometimes such calls are not obvious. A slightly less obvious example: the constructor calls function A, then function A calls virtual function B. An even less obvious example: `Start()` launches a background thread, then `Stop()` waits for this background thread to exit. To avoid the worst case where `Stop()` is not called, `Stop()` is invoked in the destructor. The background thread calls a virtual function.
+Sometimes the call chain is indirect: ctor -> helper A -> virtual B. Or `Start()` launches a thread whose callback uses virtual functions; `Stop()` joins it; destructor auto-calls `Stop()` — same pitfall.
 
 /// admonition | Note
 <!-- markdownlint-disable-next-line MD033 -->
-When calling a virtual function in a constructor in C++, it guarantees only calling the version defined in the base class, as if it were not virtual. <del style="color:#666;">Actually this is even more of a pitfall (quietly muttering)</del>
+Calling a virtual in a constructor dispatches only to the base-class implementation (as if non-virtual). <del style="color:#666;">Which can be even more confusing.</del>
 ///
 
 ### (Copy-by) Value-Semantics Types / Reference-Semantics Types
@@ -179,7 +179,7 @@ Java user-defined types have a major limitation: it is impossible to define a "v
 ```
 
 /// admonition | Note
-In Java we can only define reference types and cannot define value types. But in C++ it is very different; the type we define by default is a value type, and we need to do some extra things to make it usable only with reference semantics.
+Java lets you define only reference types (aside from primitives). C++ defaults to value semantics; extra work is required to force reference-only usage.
 ///
 
 > For value types, it is best to overload `operator==` and `operator!=` and provide a hash function. We will cover this later in the operator overloading section.
@@ -190,7 +190,7 @@ Below is an example of creating a "reference type" in C++:
 --8<-- ".snippets/types/user-types/007-value-vs-reference.h:code"
 ```
 
-In short, a reference type should:
+Summary: a reference-semantics type should:
 
 1. Disable copy
 1. Virtual destructor
@@ -199,7 +199,7 @@ In short, a reference type should:
 > More content see <https://isocpp.org/wiki/faq/value-vs-ref-semantics>
 
 /// admonition | Note
-If move is not allowed, or copy is implemented but move is temporarily not implemented, the move constructor and assignment operator should be explicitly deleted.
+If move is disallowed—or copy exists but move not yet provided—explicitly delete the move ctor/assignment.
 
 Detailed explanation see <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c21-if-you-define-or-delete-any-copy-move-or-destructor-function-define-or-delete-them-all>
 ///
@@ -220,53 +220,53 @@ In C++ we handle it like this:
 
 ## Type Aliases
 
-In C++, you can create an alias for a type; using the alias is equivalent to using the original name. The C language already provided such functionality via the `typedef` keyword. In C++, to support templates (introduced later), a new keyword `using` was added. It is recommended to always use `using` to define aliases.
+You can create a type alias; using it is identical to using the original. C had `typedef`; C++ added `using` (template-friendly). Prefer `using`.
 
 ```cpp
 --8<-- ".snippets/types/type-alias/001-basic-aliases.cc:code"
 ```
 
-C++ type aliases are identical to the original type. This feature is sometimes convenient and sometimes troublesome. For example, sometimes we create two aliases A and B for the same type for different purposes, and we do not wish to assign an object of type B to a variable of type A.
+Aliases are true synonyms—sometimes convenient, sometimes troublesome (e.g. two semantic roles A and B for the same underlying type but assignment between them is still allowed).
 
 ```cpp
 --8<-- ".snippets/types/type-alias/002-alias-misuse.cc:code"
 ```
 
-See the workaround method [StrongAlias](https://source.chromium.org/chromium/chromium/src/+/main:base/types/strong_alias.h;drc=14bffe4980429ebe1179319e15e049236252f8c1) (and the C++ proposal [New paper: N3741, Toward Opaque Typedefs for C++1Y, v2 -- Walter Brown : Standard C++](https://isocpp.org/blog/2013/08/new-paper-n3741-toward-opaque-typedefs-for-c1y-v2-walter-brown)).
+Workaround: [StrongAlias](https://source.chromium.org/chromium/chromium/src/+/main:base/types/strong_alias.h;drc=14bffe4980429ebe1179319e15e049236252f8c1) and proposal [N3741](https://isocpp.org/blog/2013/08/new-paper-n3741-toward-opaque-typedefs-for-c1y-v2-walter-brown).
 
 ## Smart Pointers
 
 ### `std::unique_ptr` and `std::shared_ptr`
 
-`std::shared_ptr` and `std::unique_ptr` are called smart pointers in C++, relative to raw pointers. An example about raw pointers:
+`std::shared_ptr` and `std::unique_ptr` are “smart pointers” (contrast with raw pointers). Example raw pointer usage:
 
 ```cpp
 --8<-- ".snippets/types/smart-pointers/001-raw-pointer.cc:code"
 ```
 
-We create an object on the heap using the `new` keyword and after use reclaim the memory allocated to it with the `delete` keyword. A key problem is we must remember to `delete` it, which is hard to achieve for some complex control flows (such as early returns in if branches). A smart pointer is essentially a value-type object allocated on the heap; when it goes out of scope it is automatically destructed, giving us a chance to do something in the destructor. This concept is called RAII (Resource Acquisition Is Initialization, explained later).
+`new` allocates; later you must `delete`. Remembering every `delete` across complex control flow (early returns, exceptions) is error-prone. A smart pointer is a small value-type wrapper owning a raw pointer whose destructor releases the resource (RAII: Resource Acquisition Is Initialization).
 
-`std::unique_ptr` is suitable where ownership is unique. Although it is a value type, copy is disabled. Simply put, whenever you think you do not need `std::shared_ptr` or are unsure whether you need `std::shared_ptr`, always use `std::unique_ptr` (because a `std::unique_ptr` can be converted into a `std::shared_ptr` via `std::move`, but not vice versa). It basically is a simple wrapper around `new` and `delete`; when a `std::unique_ptr` is destructed it automatically calls `delete` on the internal raw pointer to reclaim its resource.
+`std::unique_ptr` models exclusive ownership. Copy is disabled. Default to it unless you specifically need shared lifetime (it can be promoted to `std::shared_ptr` via `std::move`, never the reverse). Its destructor invokes `delete` on the held pointer.
 
-`std::shared_ptr` adds reference counting functionality on top of `std::unique_ptr`, equivalent to adding copy capability to `std::unique_ptr`, but the copy here is not the actual data; instead it increments the reference counter by 1. Each time a `std::shared_ptr` is destructed it decrements the counter by 1; if the counter reaches 0 it means no one needs this data, and its internal data is reclaimed.
+`std::shared_ptr` adds reference counting: copying increments a control block count; destruction decrements; reaching zero deletes the managed object.
 
 /// admonition | Note
 When using `std::shared_ptr`, be careful to avoid cyclic references (e.g. `a->b->c->a`).
 ///
 
-A common solution is to separate ownership; taking a singly linked list as an example:
+Common solution: separate ownership (e.g. singly linked list):
 
 ```cpp
 --8<-- ".snippets/types/smart-pointers/002-linked-list-ownership.cc:code"
 ```
 
-Smart pointers can also specify a custom deleter function; see relevant documentation for specific usage.
+Smart pointers can take custom deleters; see documentation.
 
 ### `std::shared_ptr` and `std::weak_ptr`
 
 A common scenario is you need to access an object: if it has not been destructed you do something with it; if it has been destructed then do nothing. A tricky point is when you determine the object has not been destructed you must ensure it will not suddenly be destructed during your computation; but if you hold its `std::shared_ptr`, then it will never be destructed because you still hold a reference.
 
-Still a bit abstract, so an example: suppose we have a service whose health can be checked by a `healthy()` method; when the service is unhealthy it might be stuck or have some other issue; a WatchDog monitors whether this class is working properly.
+Example: a service exposes `healthy()`; a watchdog monitors it without extending its lifetime unintentionally.
 
 ```cpp
 --8<-- ".snippets/types/smart-pointers/003-watchdog-weak-ptr.cc:code"
@@ -280,9 +280,9 @@ In Java the `final` keyword can mark a variable as read-only, but this semantics
 --8<-- ".snippets/types/const-types/001-final-atomiclong.java:code"
 ```
 
-The actual meaning here is we cannot `new` another `AtomicLong` and let `a` point to this new instance, but we can still change the internal value of the current `AtomicLong` that `a` points to.
+Meaning: you cannot rebind `a` to a new `AtomicLong`, but you can still mutate the pointed-to object's internal state.
 
-If we also want the internal value of `AtomicLong` to be unchangeable, we actually need an `AtomicLongReadOnlyView` object. In actual use this "read-only" need is quite common. C++ provides a mechanism: by annotating functions to indicate which are "read-only" functions, it can automatically generate a read-only interface for any object.
+If you need immutability of the underlying value, you would require an `AtomicLongReadOnlyView`. This pattern is common; C++ offers `const` qualification to carve out a read-only interface.
 
 The `const` keyword qualifies the type to its left, unless there is no type on its left, in which case it qualifies the type immediately to its right. For example `const A*` and `A const*` are equivalent.
 
@@ -292,7 +292,7 @@ The `const` keyword qualifies the type to its left, unless there is no type on i
 
 ## Constants
 
-Common ways to define constants in C++ (ordered by recommendation):
+Common ways to define constants in C++ (in recommended order):
 
 > More content see https://abseil.io/tips/140
 
@@ -301,10 +301,10 @@ Common ways to define constants in C++ (ordered by recommendation):
 ```
 
 /// admonition | Note
-Pay special attention: do not define constants of type `std::string`.
+Do not define constants of type `std::string`.
 ///
 
-Reasons:
+Reasoning:
 
 1. The constructor of `std::string` does not support `constexpr` until C++20.
 1. The initialization order of global variables across translation units (`.cc`, `.cpp` files) is undefined behavior, leading to a problem where if another global variable depends on this variable for initialization, the result is indeterminate. (See <https://isocpp.org/wiki/faq/ctors#static-init-order>)
@@ -323,32 +323,32 @@ Prior to C++17 you could not define constants and their values in a header file;
 
 > <https://www.modernescpp.com/index.php/c-core-guidelines-rules-for-conversions-and-casts>
 
-The C type system is rather messy; C++ bears many historical burdens to stay compatible with C. So type conversion becomes a big pit you should avoid whenever possible.
+The C type system is messy; C++ inherits the baggage. Avoid conversions unless necessary.
 
 ### The Four C++-Style Cast Operators
 
-Simply put, the original C-style cast is too powerful—it can convert anything. We split it into several smaller categories:
+C-style casts are overly powerful. C++ splits them into:
 
 - `const_cast`: can only add or remove the `const` qualifier.
 - `reinterpret_cast`: used to convert pointer types (actually does nothing, just changes how we interpret the pointed-to content), or between integers and pointers (sometimes we want to use an integer to represent a pointer, e.g. taking the address directly as its hash value).
 - `dynamic_cast`: used to convert between pointers, but checks at runtime via RTTI (Runtime Type Information) whether the conversion type is correct; if not, returns `nullptr`.
 
-If we can use these new cast operators, use them. If not—meaning you need the full power of C-style casting—then use `static_cast`.
+Prefer the specialized cast operators; fall back to `static_cast` only when necessary.
 
 ### Be Careful with const_cast
 
 /// admonition | Note
-Pay special attention: if the object itself is `const`, or you cannot guarantee it is not `const`, even if you remove the `const` qualifier with `const_cast`, you still must not modify its contents. Doing so is undefined behavior.
+If the object is truly `const` (or you cannot prove otherwise) removing `const` and mutating it is undefined behavior.
 ///
 
 ### Converting Base Class Pointer/Reference to Derived Class Pointer/Reference
 
-`dynamic_cast` is often used to convert a base type pointer to a derived type pointer, e.g. `Dog* dog = dynamic_cast<Dog*>(animal)`. Usually we do not need runtime type checking; our program logic can guarantee the conversion is correct. Using `dynamic_cast` is just to catch bugs. In that scenario I recommend using `dynamic_cast` in Debug builds and `static_cast` in Release builds. Two benefits:
+`dynamic_cast` downcasts with runtime checking. Often logic already guarantees correctness; then use it only in Debug, and `static_cast` in Release. Benefits:
 
 1. No unnecessary runtime type checks; better performance
 1. Avoid using RTTI information; resulting code can be smaller
 
-If we indeed want to convert a base class pointer to a derived class pointer, we can do even better:
+Helper pattern:
 
 ```cpp
 --8<-- ".snippets/types/conversions/001-implicit-down-cast.h:code"
@@ -356,7 +356,7 @@ If we indeed want to convert a base class pointer to a derived class pointer, we
 
 ### `bit_cast`
 
-Besides the scenarios above, sometimes we need lower-level (bit-level) conversions. For example, directly converting a `uint64_t` to a `double`. This conversion performs no meaningful operation; it just reinterprets the 64 bits. This is somewhat like `reinterpret_cast`, but outside its defined conversion range (between pointers, or between pointers and integers). C++20 added `bit_cast` to solve this problem. Before that we could only use `memcpy` ourselves:
+Sometimes we need raw bit reinterpretation (e.g. treat 64 bits as `double`). `bit_cast` (C++20) provides this; before that use `memcpy`.
 
 ```cpp
 --8<-- ".snippets/types/conversions/002-bit-cast.h:code"
@@ -366,7 +366,7 @@ Besides the scenarios above, sometimes we need lower-level (bit-level) conversio
 
 #### `std::unique_ptr` can convert to `std::shared_ptr`, but not vice versa
 
-Therefore if we write our own methods, we should return `std::unique_ptr` where possible.
+Thus prefer returning `std::unique_ptr`.
 
 ```cpp
 --8<-- ".snippets/types/conversions/003-unique-to-shared.cc:code"
@@ -376,7 +376,7 @@ Therefore if we write our own methods, we should return `std::unique_ptr` where 
 
 > <https://en.cppreference.com/w/cpp/memory/shared_ptr/pointer_cast>
 
-`std::static_pointer_cast`, `std::dynamic_pointer_cast`, `std::const_pointer_cast`, `std::reinterpret_pointer_cast` are the `shared_ptr` versions of the four basic cast operators. Similarly, we can implement `down_pointer_cast`.
+`std::static_pointer_cast`, `std::dynamic_pointer_cast`, `std::const_pointer_cast`, `std::reinterpret_pointer_cast` mirror the raw casts for `shared_ptr`. A custom `down_pointer_cast` can also be defined.
 
 ```cpp
 --8<-- ".snippets/types/conversions/004-pointer-cast.cc:code"
@@ -384,21 +384,21 @@ Therefore if we write our own methods, we should return `std::unique_ptr` where 
 
 ### Narrowing Conversions
 
-To stay compatible with C, C++ bears many historical burdens, one of which is implicit conversions. For example, converting from `double` (usually 8 bytes) to `int` (usually 4 bytes) is “automatic” and produces only a compiler warning:
+Implicit narrowing (e.g. `double` → `int`) still occurs with only a warning:
 
 ```cpp
 --8<-- ".snippets/types/conversions/005-narrowing-basic.cc:code"
 ```
 
-That is why we need to pay attention to and eliminate compiler warnings as much as possible.
+Hence treat warnings seriously and eliminate them.
 
-First introduce how to prevent implicit narrowing conversions: the principle is simple—when calling constructors always use braces instead of parentheses:
+To prevent implicit narrowing: prefer brace initialization over parentheses:
 
 ```cpp
 --8<-- ".snippets/types/conversions/006-brace-init-narrowing.cc:code"
 ```
 
-Then when you do need to convert types:
+When a narrowing conversion is intentional:
 
 ```cpp
 --8<-- ".snippets/types/conversions/007-narrow-cast-helpers.cc:code"
@@ -406,9 +406,9 @@ Then when you do need to convert types:
 
 ## Generics (C++ Templates)
 
-Considering this is a beginner's guide, only generics are introduced here; template metaprogramming is not covered (and in future trends, various template metaprogramming tricks in C++ will gradually be replaced by `constexpr`).
+This is a beginner's guide: only basic generics, no template metaprogramming (many patterns are moving toward `constexpr`).
 
-> If you want to dive deeper into template metaprogramming, it is strongly recommended to write a few simple recursive algorithms in Haskell (e.g. Fibonacci). Then you'll understand the core gameplay of template metaprogramming (pattern matching + recursion).
+> Tip: writing a simple recursive algorithm (e.g. Fibonacci) in Haskell helps internalize template meta "pattern matching + recursion" mechanics.
 
 ### Generic Methods
 
@@ -434,7 +434,7 @@ Considering this is a beginner's guide, only generics are introduced here; templ
 
 #### All Must Be Written in Header Files
 
-The detailed concept of header files will be introduced later. Simply put, content originally written in `.cc` or `.cpp` files must now be written in `.h` files. If you still want to separate into two files, as a workaround you can put what would have been in the `.cc` file into an `.inc` file and then `#include` that `.inc` file inside the `.h` file (essentially still everything is in the `.h`).
+Details on headers later. For templates definitions must be visible (typically in headers). Workaround: put implementation in an `.inc` and include it from the header.
 
 ```cpp
 --8<-- ".snippets/types/generic/005-header-body-layout.cc:code"
@@ -442,7 +442,7 @@ The detailed concept of header files will be introduced later. Simply put, conte
 
 #### Constraining Types Is Complicated
 
-As of now (2021-05-14) the [Concept mechanism](https://en.cppreference.com/w/cpp/language/constraints) is not yet widely used, making constraining generic types difficult and indirect. Currently there are two main mechanisms:
+As of 2021-05-14 Concepts are not widely adopted; constraining templates is clumsy via:
 
 1. Use `static_assert` for compile-time checks.
 2. Use `std::enable_if` to disable non-conforming branches during template instantiation.
@@ -473,11 +473,11 @@ We construct a partial order between types via inheritance: if type A inherits f
 | Contravariance | Reverses the ≤ ordering |
 | Invariance | Neither of the above applies |
 
-In concrete usage (for methods) this splits into covariance/contravariance of parameters / return values.
+For methods this separates into parameter vs return variance.
 
 /// admonition | TODO
     type: todo
-Gave it some thought; probably most Java users don't really know contravariance/covariance. I'll skip this topic for now and fill it in later. Some previously collected references remain here.
+Probably most Java users haven't needed formal variance terms; skipping detailed treatment for now. References below.
 ///
 
 Templates, covariance and contravariance
@@ -505,7 +505,7 @@ Note: `boost::optional<T>` and `std::optional<T>` are not covariant in general b
 
 ## Strings
 
-In C++, `std::string` should only be used as a bytes array, basically ignoring encoding issues; be cautious when using it as a string. Many of its methods are also inconsistent with other containers—use with care. (You can use chromium's stl_utils to solve some problems, e.g. a Contains method.)
+Treat `std::string` primarily as a byte container; encoding concerns are largely absent. Its API differs from other containers; be cautious. (Chromium's stl_utils offers helpers like `Contains`.)
 
 /// admonition | Note
 If you need to process Unicode characters, absolutely do not use `std::string`.
@@ -515,19 +515,19 @@ If you need to process Unicode characters, absolutely do not use `std::string`.
 
 ## Enums
 
-Java's enum type is relatively complex; it can contain methods and member variables. C/C++ enums are more pure: just a set of specific integer values. C++ is compatible with C-style enum declarations, but we should avoid using that style because the enum constants leak directly into the containing namespace and there is no type checking. We should prefer the new enum declaration style, i.e. scoped enum.
+Java enums are rich (methods, fields). C/C++ enums are simple integer sets. Prefer scoped enums; classic enums leak names and lack type safety.
 
 ```cpp
 --8<-- ".snippets/types/enum/001-basic-enum.cc:code"
 ```
 
-Further, we can specify the underlying type of an enum: which integer type to store it as.
+You can also specify the underlying integer type.
 
 ```cpp
 --8<-- ".snippets/types/enum/002-underlying-type.cc:code"
 ```
 
-For some complicated reasons, old enum declarations are sometimes used to declare constants. Just know such usage exists; normally don't do this.
+Legacy style sometimes appears for constants; avoid unless necessary.
 
 ```cpp
 --8<-- ".snippets/types/enum/003-anonymous-enum-constant.cc:code"
@@ -535,19 +535,19 @@ For some complicated reasons, old enum declarations are sometimes used to declar
 
 ## `std::variant` and Tagged Union
 
-Java has no concept of a union type. C/C++ allows programmers to represent data in a more compact memory layout. A union is mainly used to store data of type A or type B (not both simultaneously). Can be extended to more types.
+Java lacks a native union; C/C++ unions let one memory region represent one of several types (mutually exclusive).
 
 ```cpp
 --8<-- ".snippets/types/union/001-union-basic.cc:code"
 ```
 
-How do we know what type the union actually stores? A simple method is to add an enum type.
+To track the active member, add an explicit tag enum.
 
 ```cpp
 --8<-- ".snippets/types/union/002-union-tagged.cc:code"
 ```
 
-However, this old-style union declaration has a drawback: it's hard to handle non-trivial data types (e.g. `std::string`). Usually we use `std::variant` to solve this:
+Old unions struggle with non-trivial types (e.g. `std::string`). Prefer `std::variant`:
 
 ```cpp
 --8<-- ".snippets/types/union/003-variant-example.cc:code"
@@ -555,11 +555,11 @@ However, this old-style union declaration has a drawback: it's hard to handle no
 
 ## `std::optional`
 
-C/C++/Java have long used null pointers to represent optional values, but this is proven error-prone in engineering practice. Interested readers can watch the famous talk below.
+Null pointers historically modeled optional values in C/C++/Java—error-prone. See the classic talk:
 
 [Null References: The Billion Dollar Mistake](https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/)
 
-So in C++ we introduced references to replace pointers. One important principle is to use references rather than pointers whenever possible. Although the Google C++ Style Guide requires mutable parameters to be passed via pointers, we basically assume the incoming pointer is non-null. So how do we represent a value that may be empty? I personally recommend using `std::optional` (`absl::optional`), which prominently signals to everyone the value may be empty.
+Prefer references over pointers when non-null is required. For maybe-absent values use `std::optional` (`absl::optional`) to make emptiness explicit.
 
 ```cpp
 --8<-- ".snippets/types/optional/001-optional-basic.cc:code"
@@ -567,7 +567,7 @@ So in C++ we introduced references to replace pointers. One important principle 
 
 ## std::function
 
-Similar to Java's `java.util.function` package, but more convenient: it can take any number of parameters and does not distinguish primitive types.
+Analogous to Java's `java.util.function`, but allows arbitrary arity and treats all types uniformly.
 
 ```java
 --8<-- ".snippets/types/function/000-java-functional-example.java:code"
@@ -577,13 +577,13 @@ Similar to Java's `java.util.function` package, but more convenient: it can take
 --8<-- ".snippets/types/function/001-std-function-basic.cc:code"
 ```
 
-The type of a lambda expression is not `std::function`, but a `std::function` can bind a lambda expression. Copying a `std::function` copies the captured content as well.
+Lambdas have unique closure types; `std::function` type-erases them. Copying a `std::function` copies captured state.
 
 /// admonition | Note
-Avoid using `std::bind`; details see <https://abseil.io/tips/108>
+Avoid `std::bind`; see <https://abseil.io/tips/108>
 ///
 
-`std::function` does not support binding move-only types, but a lambda can capture move-only types. Currently the standard library does not yet provide a move-only-function; you need to workaround it yourself:
+`std::function` cannot hold move-only callables; lambdas can capture move-only objects. A move-only wrapper requires a custom workaround:
 
 ```cpp
 --8<-- ".snippets/types/function/002-std-function-move-only.cc:code"
