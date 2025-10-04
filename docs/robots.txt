@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://cxx-for-java-developers.pages.dev/sitemap.xml
