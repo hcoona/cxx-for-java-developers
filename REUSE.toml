@@ -9,3 +9,13 @@ path = ["NOTICE", "uv.lock"]
 precedence = "override"
 SPDX-FileCopyrightText = "2021 Shuai Zhang"
 SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [
+  "docs/5f62d74a17a5413a82bafcc13ae96791.txt",
+  "docs/google7e6a3a9e97fcfd80.html",
+  "docs/robots.txt",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "2021 Shuai Zhang"
+SPDX-License-Identifier = "CC-BY-NC-ND-4.0"
