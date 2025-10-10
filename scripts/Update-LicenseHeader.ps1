@@ -66,22 +66,23 @@ try {
 
 	Write-Verbose 'Executing uvx reuse annotate ...'
 
-	uvx reuse annotate -c $Copyright -l $DocumentLicense -y 2021 `
+	uvx reuse@5.1.1 annotate -c $Copyright -l $DocumentLicense -y 2021 `
         "docs/**/*.md"
     # Add "docs/**/*.js" here if you want license headers in JS files too
-	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
+	uvx reuse@5.1.1 annotate -c $Copyright -l $DefaultLicense -y 2021 `
         "docs/**/*.html" "docs/**/*.css"
-	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
+    git restore --source=HEAD -- "docs/google7e6a3a9e97fcfd80.html"
+	uvx reuse@5.1.1 annotate -c $Copyright -l $DefaultLicense -y 2021 `
         "docs/.snippets/**/*.h" "docs/.snippets/**/*.cc" `
         "docs/.snippets/**/*.sh" "docs/.snippets/**/*.java"
-	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
+	uvx reuse@5.1.1 annotate -c $Copyright -l $DefaultLicense -y 2021 `
         --style python `
         "docs/.snippets/**/*.bazel"
 
-	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
+	uvx reuse@5.1.1 annotate -c $Copyright -l $DefaultLicense -y 2021 `
         "overrides/**" "scripts/**"
 
-	uvx reuse annotate -c $Copyright -l $DefaultLicense -y 2021 `
+	uvx reuse@5.1.1 annotate -c $Copyright -l $DefaultLicense -y 2021 `
         ".editorconfig" ".gitignore" ".markdownlint-cli2.yaml" ".markdownlint.yml" `
         "mkdocs.yml" "pyproject.toml" "README.*" "REUSE.toml"
 

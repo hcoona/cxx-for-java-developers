@@ -52,7 +52,7 @@ try {
 	Push-Location (Join-Path $PSScriptRoot '..')
 
 	Write-Verbose 'Executing uvx reuse lint ...'
-    uvx reuse lint
+    uvx reuse@5.1.1 lint
 
     Write-Verbose 'Executing markdownlint ...'
     pnpm dlx markdownlint-cli2 "**/*.md"
